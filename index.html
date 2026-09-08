@@ -207,7 +207,8 @@
   </div>
 
   <script>
-    const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQY_lZWa4w9WJ2dWvpofp6a4Vk1qhDF-y_KNArVqy-ExKQ6SSibMV-y-BwhHX0mMbPDgjFrSD86tigi/pub?gid=1811588047&single=true&output=csv";
+    const SPREADSHEET_ID = "1pTLAXzXDoxAg_Vhkt8yFxXQ7wF7bT2Q_9t8BdScEnIc";
+    const SHEET_NAME = "Raw";
     const EXCHANGE_RATE = 1547;
 
     const BASE_DATA = [
@@ -301,7 +302,6 @@
       let metaMap = null;
       let googleMap = null;
 
-      // 1. 헤더 행 탐색
       for (let r = 0; r < Math.min(rows.length, 10); r++) {
         const row = rows[r];
         const rowStr = row.join(' ');
@@ -335,7 +335,6 @@
         }
       }
 
-      // 기본 인덱스 폴백
       if (!metaMap || metaMap.name === undefined) {
         metaMap = { name: 1, date: 2, imp: 3, clicks: 4, spend: 5, reg: 6, pur: 8, rev: 9 };
       }
@@ -343,7 +342,6 @@
         googleMap = { name: 14, date: 16, imp: 17, clicks: 18, spend: 20, results: 21 };
       }
 
-      // 2. 데이터 행 파싱 (좌우 독립 처리)
       rows.forEach(row => {
         if (!row || row.length === 0) return;
 
@@ -413,45 +411,54 @@
       renderDashboard();
     }
 
-    async function fetchGoogleSheetData() {
+    /* ============================================================
+       구글 시각화(GViz) JSONP 연동 엔진 (CORS 제약 100% 우회)
+       ============================================================ */
+    function fetchGoogleSheetData() {
       updateStatusBadge("구글 시트 연동 중...", false);
-      let textData = null;
 
-      try {
-        const res = await fetch(GOOGLE_SHEET_CSV_URL);
-        if (res.ok) textData = await res.text();
-      } catch (e) {
-        console.warn("Direct fetch error:", e);
-      }
+      const oldScript = document.getElementById("gviz_jsonp_script");
+      if (oldScript) oldScript.remove();
 
-      if (!textData) {
+      window.googleSheetDataCallback = function(json) {
         try {
-          const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(GOOGLE_SHEET_CSV_URL);
-          const pRes = await fetch(proxyUrl);
-          if (pRes.ok) textData = await pRes.text();
-        } catch (pe) {
-          console.error("Proxy fetch error:", pe);
-        }
-      }
-
-      if (textData && textData.trim().length > 0) {
-        Papa.parse(textData, {
-          header: false,
-          skipEmptyLines: true,
-          complete: (results) => {
-            processDualColumnSheet(results.data);
-            if (rawDailyData.length > 0) {
-              updateStatusBadge(`✓ 실시간 시트 동기화 완료 (${rawDailyData.length}행)`, true);
-            } else {
-              updateStatusBadge("시트 연동 실패(기본 데이터 로드)", false);
-              loadFallbackData();
-            }
+          if (!json || !json.table || !json.table.rows) {
+            throw new Error("데이터 구조 오류");
           }
-        });
-      } else {
+
+          const headerRow = json.table.cols.map(c => (c && c.label) ? c.label : '');
+          const dataRows = json.table.rows.map(r => {
+            return r.c.map(cell => {
+              if (!cell) return '';
+              return (cell.f !== undefined && cell.f !== null) ? cell.f : ((cell.v !== undefined && cell.v !== null) ? cell.v : '');
+            });
+          });
+
+          const fullGrid = [headerRow, ...dataRows];
+          processDualColumnSheet(fullGrid);
+
+          if (rawDailyData.length > 0) {
+            updateStatusBadge(`✓ 실시간 시트 동기화 완료 (${rawDailyData.length}행)`, true);
+          } else {
+            updateStatusBadge("시트 연동 실패(기본 데이터 로드)", false);
+            loadFallbackData();
+          }
+        } catch (e) {
+          console.error("Parse Error:", e);
+          updateStatusBadge("시트 연동 실패(기본 데이터 로드)", false);
+          loadFallbackData();
+        }
+      };
+
+      const script = document.createElement('script');
+      script.id = "gviz_jsonp_script";
+      script.src = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=responseHandler:googleSheetDataCallback&sheet=${encodeURIComponent(SHEET_NAME)}&t=${Date.now()}`;
+      script.onerror = function() {
+        console.error("GViz script load failed");
         updateStatusBadge("시트 연동 실패(기본 데이터 로드)", false);
         loadFallbackData();
-      }
+      };
+      document.body.appendChild(script);
     }
 
     function loadFallbackData() {
@@ -723,7 +730,7 @@
     });
 
     async function boot() {
-      await fetchGoogleSheetData();
+      fetchGoogleSheetData();
     }
     
     boot();
