@@ -7,6 +7,7 @@
   
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v3.2.1/dist/web/variable/pretendardvariable.css" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   
   <script>
@@ -206,9 +207,6 @@
   </div>
 
   <script>
-    /* ============================================================
-       구글 시트 다이렉트 CSV URL (웹페이지 링크 -> CSV 출력 링크로 변환 적용됨)
-       ============================================================ */
     const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQY_lZWa4w9WJ2dWvpofp6a4Vk1qhDF-y_KNArVqy-ExKQ6SSibMV-y-BwhHX0mMbPDgjFrSD86tigi/pub?gid=1811588047&single=true&output=csv";
     const EXCHANGE_RATE = 1547;
 
@@ -267,9 +265,10 @@
     }
 
     function normalizeDate(dateStr) {
-      const p = String(dateStr).trim().replace(/\./g, '-').split('-');
+      if (!dateStr) return '';
+      const p = String(dateStr).trim().replace(/\./g, '-').replace(/\//g, '-').split('-');
       if (p.length >= 3) return `${p[0]}-${p[1].padStart(2, '0')}-${p[2].padStart(2, '0')}`.substring(0, 10);
-      return dateStr;
+      return '';
     }
 
     function updateStatusBadge(text, isSuccess) {
@@ -293,104 +292,120 @@
     }
 
     /* ============================================================
-       동적 컨텍스트 스위칭 파서 (메타/구글 구조 혼합 인식)
+       가로 병렬 배치 시트 전용 파서 (메타 + 구글 좌우 분리 스캔)
        ============================================================ */
-    function processDynamicSheetRows(dataArrays) {
+    function processDualColumnSheet(rows) {
       const parsed = [];
-      let currentMode = 'NONE';
-      let colMap = {};
+      if (!rows || rows.length < 2) return;
 
-      dataArrays.forEach(row => {
+      let metaMap = null;
+      let googleMap = null;
+
+      // 1. 헤더 행 탐색
+      for (let r = 0; r < Math.min(rows.length, 10); r++) {
+        const row = rows[r];
+        const rowStr = row.join(' ');
+
+        if (rowStr.includes('지출 금액') || rowStr.includes('노출수') || rowStr.includes('캠페인')) {
+          metaMap = {};
+          googleMap = {};
+
+          row.forEach((colName, idx) => {
+            const h = String(colName).trim().replace(/^\ufeff/, '');
+            
+            // 메타 헤더 맵핑
+            if (h === '광고 세트 이름') metaMap.name = idx;
+            if (h === '일' && metaMap.date === undefined) metaMap.date = idx;
+            if (h === '노출') metaMap.imp = idx;
+            if (h === '링크 클릭') metaMap.clicks = idx;
+            if (h.includes('지출 금액')) metaMap.spend = idx;
+            if (h === '등록 완료') metaMap.reg = idx;
+            if (h === '구매') metaMap.pur = idx;
+            if (h.includes('전환값')) metaMap.rev = idx;
+
+            // 구글 헤더 맵핑
+            if (h === '캠페인') googleMap.name = idx;
+            if ((h === '일' || h === 'Day' || h === '날짜') && metaMap.date !== undefined && idx > metaMap.date) googleMap.date = idx;
+            if (h === '노출수') googleMap.imp = idx;
+            if (h === '클릭수') googleMap.clicks = idx;
+            if (h === '비용') googleMap.spend = idx;
+            if (h === '결과') googleMap.results = idx;
+          });
+          break;
+        }
+      }
+
+      // 기본 인덱스 폴백
+      if (!metaMap || metaMap.name === undefined) {
+        metaMap = { name: 1, date: 2, imp: 3, clicks: 4, spend: 5, reg: 6, pur: 8, rev: 9 };
+      }
+      if (!googleMap || googleMap.name === undefined) {
+        googleMap = { name: 14, date: 16, imp: 17, clicks: 18, spend: 20, results: 21 };
+      }
+
+      // 2. 데이터 행 파싱 (좌우 독립 처리)
+      rows.forEach(row => {
         if (!row || row.length === 0) return;
-        
-        const rowStr = row.join('');
-        
-        // 1. 메타 헤더 행 감지 시 기준 인덱스 맵핑
-        if (rowStr.includes('지출 금액') || rowStr.includes('링크 클릭') || (rowStr.includes('캠페인') && rowStr.includes('등록 완료'))) {
-          currentMode = 'META';
-          colMap = {};
-          row.forEach((colName, idx) => {
-            const name = String(colName).trim();
-            if (name === '일' || name === 'Date' || name === '보고 시작') colMap.date = idx;
-            if (name === '광고 세트 이름' || name === '캠페인 이름' || name === '캠페인') colMap.name = idx;
-            if (name.includes('지출 금액') || name === '비용') colMap.spend = idx;
-            if (name === '등록 완료') colMap.reg = idx;
-            if (name === '구매') colMap.pur = idx;
-            if (name.includes('전환값')) colMap.rev = idx;
-            if (name === '노출') colMap.imp = idx;
-            if (name === '링크 클릭' || name === '클릭') colMap.clicks = idx;
-          });
-          return; // 헤더 행 자체는 파싱 건너뜀
-        }
-        
-        // 2. 구글 헤더 행 감지 시 기준 인덱스 맵핑 전환
-        if (rowStr.includes('캠페인') && (rowStr.includes('노출수') || rowStr.includes('결과'))) {
-          currentMode = 'GOOGLE';
-          colMap = {};
-          row.forEach((colName, idx) => {
-            const name = String(colName).trim();
-            if (name === '일' || name === 'Day' || name === '날짜') colMap.date = idx;
-            if (name === '캠페인' || name === '캠페인명') colMap.name = idx;
-            if (name === '비용') colMap.spend = idx;
-            if (name === '노출수' || name === '노출') colMap.imp = idx;
-            if (name === '클릭수' || name === '클릭') colMap.clicks = idx;
-            if (name === '결과') colMap.results = idx;
-            if (name === '등록 완료' || name === '예약') colMap.reg = idx;
-            if (name === '구매' || name === '구매하기') colMap.pur = idx;
-          });
-          return; // 헤더 행 자체는 파싱 건너뜀
-        }
 
-        // 3. 데이터 행 처리
-        if (currentMode === 'NONE' || colMap.date === undefined) return;
+        // [좌측 메타 영역 처리]
+        if (metaMap.date !== undefined && metaMap.name !== undefined && row[metaMap.date]) {
+          const mDate = normalizeDate(row[metaMap.date]);
+          const mName = String(row[metaMap.name] || '').trim();
 
-        const dateVal = row[colMap.date];
-        const dateStr = normalizeDate(dateVal);
-        
-        // 날짜 형식이 아니거나 빈 행, 혹은 하단의 합계/총계 행을 안전하게 스킵
-        if (!dateStr || dateStr.length < 8 || isNaN(Date.parse(dateStr))) return;
+          if (mDate && mName && mName !== '광고 세트 이름' && !mName.includes('총계')) {
+            const rawSpend = parseFloat(String(row[metaMap.spend] || '0').replace(/,/g, '').replace(/\$/g, '')) || 0;
+            const spendKrw = Math.round(rawSpend * EXCHANGE_RATE);
+            const reg = parseFloat(String(row[metaMap.reg] || '0').replace(/,/g, '')) || 0;
+            const pur = parseFloat(String(row[metaMap.pur] || '0').replace(/,/g, '')) || 0;
+            const rawRev = parseFloat(String(row[metaMap.rev] || '0').replace(/,/g, '').replace(/\$/g, '')) || 0;
+            const revKrw = Math.round(rawRev * EXCHANGE_RATE);
+            const imp = parseInt(String(row[metaMap.imp] || '0').replace(/,/g, '')) || 0;
+            const clicks = parseInt(String(row[metaMap.clicks] || '0').replace(/,/g, '')) || 0;
 
-        const rawName = row[colMap.name] || '';
-        if (!rawName || rawName.includes('총계') || rawName === '-') return;
+            const isBuy = mName.includes('매입');
+            const isSale = mName.includes('판매') || mName.includes('구입');
+            const type = isBuy ? '매입' : (isSale ? '판매' : '혼합');
 
-        let channel = currentMode === 'META' ? '메타' : '구글';
-        let spendKrw = 0, reg = 0, pur = 0, revKrw = 0, imp = 0, clicks = 0;
-
-        if (currentMode === 'META') {
-          spendKrw = parseFloat(String(row[colMap.spend] || '0').replace(/,/g, '')) || 0;
-          spendKrw = Math.round(spendKrw * EXCHANGE_RATE);
-          
-          reg = parseFloat(String(row[colMap.reg] || '0').replace(/,/g, '')) || 0;
-          pur = parseFloat(String(row[colMap.pur] || '0').replace(/,/g, '')) || 0;
-          revKrw = Math.round((parseFloat(String(row[colMap.rev] || '0').replace(/,/g, '')) || 0) * EXCHANGE_RATE);
-          imp = parseInt(String(row[colMap.imp] || '0').replace(/,/g, '')) || 0;
-          clicks = parseInt(String(row[colMap.clicks] || '0').replace(/,/g, '')) || 0;
-        } else {
-          spendKrw = parseInt(String(row[colMap.spend] || '0').replace(/,/g, '')) || 0;
-          imp = parseInt(String(row[colMap.imp] || '0').replace(/,/g, '')) || 0;
-          clicks = parseInt(String(row[colMap.clicks] || '0').replace(/,/g, '')) || 0;
-          
-          let resultStr = String(row[colMap.results] || '');
-          let resMap = {'예약': 0, '구매하기': 0}; 
-          if (resultStr && resultStr !== '0' && resultStr !== '-') {
-            resultStr.split(';').forEach(p => {
-              let m = p.match(/([^:]+):\s*([0-9.]+)/);
-              if (m && resMap[m[1].trim()] !== undefined) resMap[m[1].trim()] = parseFloat(m[2]);
+            const wInfo = calculateWeekRange(mDate);
+            parsed.push({
+              date: mDate, week_id: wInfo.id, week_label: wInfo.label, week_no: wInfo.weekNo,
+              name: mName, channel: '메타', spend: spendKrw, reg: reg, pur: pur, rev: revKrw, imp: imp, clicks: clicks, type: type
             });
           }
-          reg = resMap['예약'] || parseFloat(String(row[colMap.reg] || '0').replace(/,/g, '')) || 0; 
-          pur = resMap['구매하기'] || parseFloat(String(row[colMap.pur] || '0').replace(/,/g, '')) || 0;
         }
 
-        let isBuy = rawName.includes('매입');
-        let isSale = rawName.includes('판매') || rawName.includes('구입');
-        let type = isBuy ? '매입' : (isSale ? '판매' : '혼합');
+        // [우측 구글 영역 처리]
+        if (googleMap.date !== undefined && googleMap.name !== undefined && row[googleMap.date]) {
+          const gDate = normalizeDate(row[googleMap.date]);
+          const gName = String(row[googleMap.name] || '').trim();
 
-        const wInfo = calculateWeekRange(dateStr);
-        parsed.push({
-          date: dateStr, week_id: wInfo.id, week_label: wInfo.label, week_no: wInfo.weekNo,
-          name: rawName, channel: channel, spend: spendKrw, reg: reg, pur: pur, rev: revKrw, imp: imp, clicks: clicks, type: type
-        });
+          if (gDate && gName && gName !== '캠페인' && !gName.includes('총계')) {
+            const spendKrw = parseInt(String(row[googleMap.spend] || '0').replace(/,/g, '')) || 0;
+            const imp = parseInt(String(row[googleMap.imp] || '0').replace(/,/g, '')) || 0;
+            const clicks = parseInt(String(row[googleMap.clicks] || '0').replace(/,/g, '')) || 0;
+
+            let resultStr = String(row[googleMap.results] || '');
+            let resMap = { '예약': 0, '구매하기': 0 };
+            if (resultStr && resultStr !== '0' && resultStr !== '-') {
+              resultStr.split(';').forEach(p => {
+                let m = p.match(/([^:]+):\s*([0-9.]+)/);
+                if (m && resMap[m[1].trim()] !== undefined) resMap[m[1].trim()] = parseFloat(m[2]);
+              });
+            }
+
+            const reg = resMap['예약'] || 0;
+            const pur = resMap['구매하기'] || 0;
+            const isBuy = gName.includes('매입');
+            const isSale = gName.includes('판매') || gName.includes('구입');
+            const type = isBuy ? '매입' : (isSale ? '판매' : '혼합');
+
+            const wInfo = calculateWeekRange(gDate);
+            parsed.push({
+              date: gDate, week_id: wInfo.id, week_label: wInfo.label, week_no: wInfo.weekNo,
+              name: gName, channel: '구글', spend: spendKrw, reg: reg, pur: pur, rev: 0, imp: imp, clicks: clicks, type: type
+            });
+          }
+        }
       });
 
       rawDailyData = parsed;
@@ -399,23 +414,41 @@
     }
 
     async function fetchGoogleSheetData() {
+      updateStatusBadge("구글 시트 연동 중...", false);
+      let textData = null;
+
       try {
-        updateStatusBadge("구글 시트 연동 중...", false);
         const res = await fetch(GOOGLE_SHEET_CSV_URL);
-        if (!res.ok) throw new Error("네트워크 오류");
-        const text = await res.text();
-        
-        // header: false 옵션으로 배열 반환 강제하여 다중 구조 스캔
-        Papa.parse(text, {
+        if (res.ok) textData = await res.text();
+      } catch (e) {
+        console.warn("Direct fetch error:", e);
+      }
+
+      if (!textData) {
+        try {
+          const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(GOOGLE_SHEET_CSV_URL);
+          const pRes = await fetch(proxyUrl);
+          if (pRes.ok) textData = await pRes.text();
+        } catch (pe) {
+          console.error("Proxy fetch error:", pe);
+        }
+      }
+
+      if (textData && textData.trim().length > 0) {
+        Papa.parse(textData, {
           header: false,
           skipEmptyLines: true,
           complete: (results) => {
-            processDynamicSheetRows(results.data);
-            updateStatusBadge(`✓ 실시간 시트 동기화 완료 (${rawDailyData.length}행)`, true);
+            processDualColumnSheet(results.data);
+            if (rawDailyData.length > 0) {
+              updateStatusBadge(`✓ 실시간 시트 동기화 완료 (${rawDailyData.length}행)`, true);
+            } else {
+              updateStatusBadge("시트 연동 실패(기본 데이터 로드)", false);
+              loadFallbackData();
+            }
           }
         });
-      } catch (err) {
-        console.error("Fetch Error:", err);
+      } else {
         updateStatusBadge("시트 연동 실패(기본 데이터 로드)", false);
         loadFallbackData();
       }
@@ -527,7 +560,8 @@
 
       renderHeaderBriefing(curr.summary, curr.itemsList, selPeriod);
       renderKpis(curr.summary, prev ? prev.summary : null, curr.itemsList);
-      renderTrendChart(mode, selType, selCh); renderTopChart(curr.itemsList);
+      renderTrendChart(mode, selType, selCh); 
+      renderTopChart(curr.itemsList);
       renderTable(curr.itemsList, prev ? prev.itemsMap : null);
     }
 
@@ -575,6 +609,7 @@
     }
 
     function renderTrendChart(mode, tFilt, cFilt) {
+      if (typeof Chart === 'undefined') return;
       const map = {}; const kField = mode === 'WEEK' ? 'week_id' : 'date';
       rawDailyData.forEach(d => {
         if ((tFilt === 'ALL' || d.type === tFilt) && (cFilt === 'ALL' || d.channel === cFilt)) {
@@ -585,10 +620,12 @@
       let keys = Object.keys(map).sort((a,b) => mode === 'WEEK' ? new Date(a.split(' ~ ')[0].replace(/\./g, '-')) - new Date(b.split(' ~ ')[0].replace(/\./g, '-')) : a.localeCompare(b));
       if (mode === 'DATE' && keys.length > 20) keys = keys.slice(-20);
 
+      const canvas = document.getElementById('trendChart');
+      if (!canvas) return;
       if (trendChartInstance) trendChartInstance.destroy();
       Chart.defaults.font.family = "'Pretendard Variable', 'Pretendard', sans-serif";
       
-      trendChartInstance = new Chart(document.getElementById('trendChart').getContext('2d'), {
+      trendChartInstance = new Chart(canvas.getContext('2d'), {
         type: 'bar',
         data: {
           labels: keys.map(k => map[k].label),
@@ -602,10 +639,13 @@
     }
 
     function renderTopChart(items) {
+      if (typeof Chart === 'undefined') return;
       const top = [...items].sort((a, b) => b.spend - a.spend).slice(0, 5);
+      const canvas = document.getElementById('topCampaignChart');
+      if (!canvas) return;
       if (topChartInstance) topChartInstance.destroy();
       
-      topChartInstance = new Chart(document.getElementById('topCampaignChart').getContext('2d'), {
+      topChartInstance = new Chart(canvas.getContext('2d'), {
         type: 'bar',
         data: {
           labels: top.map(n => n.name.length > 8 ? n.name.substring(0, 8) + '..' : n.name),
