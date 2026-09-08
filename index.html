@@ -7,7 +7,6 @@
   
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v3.2.1/dist/web/variable/pretendardvariable.css" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   
   <script>
@@ -208,19 +207,16 @@
 
   <script>
     /* ============================================================
-       구글 스프레드시트 연동 URL 설정
+       구글 시트 다이렉트 CSV URL (자동 매핑 파서 적용 완료)
        ============================================================ */
-    const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQY_lZWa4w9WJ2dWvpofp6a4Vk1qhDF-y_KNArVqy-ExKQ6SSibMV-y-BwhHX0mMbPDgjFrSD86tigi/pubhtml?gid=1811588047&single=true";
+    const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1pTLAXzXDoxAg_Vhkt8yFxXQ7wF7bT2Q_9t8BdScEnIc/export?format=csv&gid=1811588047";
     const EXCHANGE_RATE = 1547;
 
     const BASE_DATA = [
       ["2026-09-06","매입_전환이벤트 2505_영상","메타",462182,18,0,0,33728,355,"매입"],
       ["2026-09-06","260331_중고폰매입_PMax","구글",343178,5,0,0,27817,221,"매입"],
       ["2026-09-06","매입_영상_260518","메타",297674,12,0,0,13759,148,"매입"],
-      ["2026-09-06","판매_전환어드벤티지 아이폰소재","메타",135595,1,7,6558522,12462,158,"판매"],
-      ["2026-09-05","매입_전환이벤트 2505_영상","메타",450000,15,0,0,32000,340,"매입"],
-      ["2026-09-05","260331_중고폰매입_PMax","구글",320000,5,0,0,25000,200,"매입"],
-      ["2026-09-05","판매_전환어드벤티지 아이폰소재","메타",140000,0,6,5558522,13000,165,"판매"]
+      ["2026-09-06","판매_전환어드벤티지 아이폰소재","메타",135595,1,7,6558522,12462,158,"판매"]
     ];
 
     const growthQuotes = [
@@ -272,7 +268,7 @@
 
     function normalizeDate(dateStr) {
       const p = String(dateStr).trim().replace(/\./g, '-').split('-');
-      if (p.length === 3) return `${p[0]}-${p[1].padStart(2, '0')}-${p[2].padStart(2, '0')}`;
+      if (p.length >= 3) return `${p[0]}-${p[1].padStart(2, '0')}-${p[2].padStart(2, '0')}`.substring(0, 10);
       return dateStr;
     }
 
@@ -297,46 +293,84 @@
     }
 
     /* ============================================================
-       CSV 원본 헤더(메타/구글) 호환 파싱 함수 (크로스체크 반영)
+       동적 컨텍스트 스위칭 파서 (메타/구글 구조 혼합 인식)
        ============================================================ */
-    function processSheetRows(rows) {
+    function processDynamicSheetRows(dataArrays) {
       const parsed = [];
-      rows.forEach(r => {
-        let dateStr = normalizeDate(r['일'] || r['날짜'] || r['Date'] || '');
-        if (!dateStr) return;
+      let currentMode = 'NONE';
+      let colMap = {};
 
-        // 원본 메타/구글 CSV 헤더 판별
-        const isMeta = r['지출 금액 (USD)'] !== undefined || r['광고 세트 이름'] !== undefined;
-        const isGoogle = r['결과'] !== undefined || r['캠페인'] !== undefined || (r['매체'] === '구글');
-        let rawName = r['광고 세트 이름'] || r['캠페인'] || r['캠페인명'] || '';
-        if (!rawName) return;
+      dataArrays.forEach(row => {
+        if (!row || row.length === 0) return;
+        
+        const rowStr = row.join('');
+        
+        // 1. 메타 헤더 행 감지 시 기준 인덱스 맵핑
+        if (rowStr.includes('지출 금액') || rowStr.includes('링크 클릭') || (rowStr.includes('캠페인') && rowStr.includes('등록 완료'))) {
+          currentMode = 'META';
+          colMap = {};
+          row.forEach((colName, idx) => {
+            const name = String(colName).trim();
+            if (name === '일' || name === 'Date' || name === '보고 시작') colMap.date = idx;
+            if (name === '광고 세트 이름' || name === '캠페인 이름' || name === '캠페인') colMap.name = idx;
+            if (name.includes('지출 금액') || name === '비용') colMap.spend = idx;
+            if (name === '등록 완료') colMap.reg = idx;
+            if (name === '구매') colMap.pur = idx;
+            if (name.includes('전환값')) colMap.rev = idx;
+            if (name === '노출') colMap.imp = idx;
+            if (name === '링크 클릭' || name === '클릭') colMap.clicks = idx;
+          });
+          return; // 헤더 행 자체는 파싱 건너뜀
+        }
+        
+        // 2. 구글 헤더 행 감지 시 기준 인덱스 맵핑 전환
+        if (rowStr.includes('캠페인') && (rowStr.includes('노출수') || rowStr.includes('결과'))) {
+          currentMode = 'GOOGLE';
+          colMap = {};
+          row.forEach((colName, idx) => {
+            const name = String(colName).trim();
+            if (name === '일' || name === 'Day' || name === '날짜') colMap.date = idx;
+            if (name === '캠페인' || name === '캠페인명') colMap.name = idx;
+            if (name === '비용') colMap.spend = idx;
+            if (name === '노출수' || name === '노출') colMap.imp = idx;
+            if (name === '클릭수' || name === '클릭') colMap.clicks = idx;
+            if (name === '결과') colMap.results = idx;
+            if (name === '등록 완료' || name === '예약') colMap.reg = idx;
+            if (name === '구매' || name === '구매하기') colMap.pur = idx;
+          });
+          return; // 헤더 행 자체는 파싱 건너뜀
+        }
 
-        let channel = r['매체'] || (isMeta ? '메타' : (isGoogle ? '구글' : '기타'));
+        // 3. 데이터 행 처리
+        if (currentMode === 'NONE' || colMap.date === undefined) return;
+
+        const dateVal = row[colMap.date];
+        const dateStr = normalizeDate(dateVal);
+        
+        // 날짜 형식이 아니거나 빈 행, 혹은 하단의 합계/총계 행을 안전하게 스킵
+        if (!dateStr || dateStr.length < 8 || isNaN(Date.parse(dateStr))) return;
+
+        const rawName = row[colMap.name] || '';
+        if (!rawName || rawName.includes('총계') || rawName === '-') return;
+
+        let channel = currentMode === 'META' ? '메타' : '구글';
         let spendKrw = 0, reg = 0, pur = 0, revKrw = 0, imp = 0, clicks = 0;
 
-        if (isMeta || channel === '메타') {
-          channel = '메타';
-          if (r['지출 금액 (USD)']) {
-            spendKrw = Math.round((parseFloat(String(r['지출 금액 (USD)']).replace(/,/g, '')) || 0) * EXCHANGE_RATE);
-          } else {
-            spendKrw = parseInt(String(r['비용'] || r['지출'] || '0').replace(/,/g, '')) || 0;
-          }
-          reg = parseFloat(r['등록 완료'] || r['예약'] || '0') || 0;
-          pur = parseFloat(r['구매'] || '0') || 0;
-          if (r['구매 전환값']) {
-            revKrw = Math.round((parseFloat(String(r['구매 전환값']).replace(/,/g, '')) || 0) * EXCHANGE_RATE);
-          } else {
-            revKrw = parseInt(String(r['전환값'] || '0').replace(/,/g, '')) || 0;
-          }
-          imp = parseInt(String(r['노출'] || r['노출수'] || '0').replace(/,/g, '')) || 0;
-          clicks = parseInt(String(r['링크 클릭'] || r['클릭수'] || r['클릭'] || '0').replace(/,/g, '')) || 0;
-        } else if (isGoogle || channel === '구글') {
-          channel = '구글';
-          spendKrw = parseInt(String(r['비용'] || r['지출'] || '0').replace(/,/g, '')) || 0;
-          imp = parseInt(String(r['노출수'] || r['노출'] || '0').replace(/,/g, '')) || 0;
-          clicks = parseInt(String(r['클릭수'] || r['클릭'] || '0').replace(/,/g, '')) || 0;
+        if (currentMode === 'META') {
+          spendKrw = parseFloat(String(row[colMap.spend] || '0').replace(/,/g, '')) || 0;
+          spendKrw = Math.round(spendKrw * EXCHANGE_RATE);
           
-          let resultStr = String(r['결과'] || '');
+          reg = parseFloat(String(row[colMap.reg] || '0').replace(/,/g, '')) || 0;
+          pur = parseFloat(String(row[colMap.pur] || '0').replace(/,/g, '')) || 0;
+          revKrw = Math.round((parseFloat(String(row[colMap.rev] || '0').replace(/,/g, '')) || 0) * EXCHANGE_RATE);
+          imp = parseInt(String(row[colMap.imp] || '0').replace(/,/g, '')) || 0;
+          clicks = parseInt(String(row[colMap.clicks] || '0').replace(/,/g, '')) || 0;
+        } else {
+          spendKrw = parseInt(String(row[colMap.spend] || '0').replace(/,/g, '')) || 0;
+          imp = parseInt(String(row[colMap.imp] || '0').replace(/,/g, '')) || 0;
+          clicks = parseInt(String(row[colMap.clicks] || '0').replace(/,/g, '')) || 0;
+          
+          let resultStr = String(row[colMap.results] || '');
           let resMap = {'예약': 0, '구매하기': 0}; 
           if (resultStr && resultStr !== '0' && resultStr !== '-') {
             resultStr.split(';').forEach(p => {
@@ -344,19 +378,13 @@
               if (m && resMap[m[1].trim()] !== undefined) resMap[m[1].trim()] = parseFloat(m[2]);
             });
           }
-          reg = resMap['예약'] || parseFloat(r['등록 완료'] || r['예약'] || '0') || 0;
-          pur = resMap['구매하기'] || parseFloat(r['구매'] || '0') || 0;
-        } else {
-          spendKrw = parseInt(String(r['비용'] || '0').replace(/,/g, '')) || 0;
-          reg = parseFloat(r['등록 완료'] || r['예약'] || '0') || 0;
-          pur = parseFloat(r['구매'] || '0') || 0;
-          imp = parseInt(String(r['노출'] || '0').replace(/,/g, '')) || 0;
-          clicks = parseInt(String(r['클릭'] || '0').replace(/,/g, '')) || 0;
+          reg = resMap['예약'] || parseFloat(String(row[colMap.reg] || '0').replace(/,/g, '')) || 0; 
+          pur = resMap['구매하기'] || parseFloat(String(row[colMap.pur] || '0').replace(/,/g, '')) || 0;
         }
 
         let isBuy = rawName.includes('매입');
         let isSale = rawName.includes('판매') || rawName.includes('구입');
-        let type = r['구분'] || (isBuy ? '매입' : (isSale ? '판매' : '혼합'));
+        let type = isBuy ? '매입' : (isSale ? '판매' : '혼합');
 
         const wInfo = calculateWeekRange(dateStr);
         parsed.push({
@@ -371,21 +399,18 @@
     }
 
     async function fetchGoogleSheetData() {
-      if (!GOOGLE_SHEET_CSV_URL || GOOGLE_SHEET_CSV_URL.includes("여기에_구글시트")) {
-        loadFallbackData();
-        updateStatusBadge("✓ 오프라인 데이터 모드 (초기설정 필요)", true);
-        return;
-      }
       try {
         updateStatusBadge("구글 시트 연동 중...", false);
         const res = await fetch(GOOGLE_SHEET_CSV_URL);
         if (!res.ok) throw new Error("네트워크 오류");
         const text = await res.text();
+        
+        // header: false 옵션으로 배열 반환 강제하여 다중 구조 스캔
         Papa.parse(text, {
-          header: true,
+          header: false,
           skipEmptyLines: true,
           complete: (results) => {
-            processSheetRows(results.data);
+            processDynamicSheetRows(results.data);
             updateStatusBadge(`✓ 실시간 시트 동기화 완료 (${rawDailyData.length}행)`, true);
           }
         });
@@ -657,7 +682,11 @@
       document.getElementById(id).addEventListener('change', () => { if(id !== 'timePeriodFilter') updatePeriodFilterOptions(); renderDashboard(); });
     });
 
-    fetchGoogleSheetData();
+    async function boot() {
+      await fetchGoogleSheetData();
+    }
+    
+    boot();
   </script>
 </body>
 </html>
