@@ -48,20 +48,42 @@
     .badge-up { background: #dcfce7; color: #166534; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-left: 4px; }
     .badge-down { background: #fee2e2; color: #991b1b; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-left: 4px; }
 
-    .quote-ticker { overflow: hidden; white-space: nowrap; position: relative; }
+    /* 부드러운 명언 트랜지션 처리 */
+    .quote-ticker { transition: opacity 0.5s ease-in-out; opacity: 1; overflow: hidden; white-space: nowrap; position: relative; }
+    
     .modal-overlay { transition: opacity 0.3s ease-out; opacity: 0; pointer-events: none; }
     .modal-overlay.active { opacity: 1; pointer-events: auto; z-index: 100; }
     .modal-content { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); transform: scale(0.95); }
     .modal-overlay.active .modal-content { transform: scale(1); }
+
+    /* 로그인 스크린 레이어 */
+    #loginScreen { backdrop-filter: blur(8px); }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased p-3 sm:p-6 pb-12">
-  <div class="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+<body class="bg-slate-50 text-slate-800 antialiased pb-12 overflow-hidden" id="mainBody">
+  
+  <!-- 보안 로그인 스크린 -->
+  <div id="loginScreen" class="fixed inset-0 bg-slate-900/95 z-[999] flex flex-col items-center justify-center p-4 transition-opacity duration-500">
+    <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center space-y-6">
+      <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto text-3xl shadow-inner">🔒</div>
+      <div>
+        <h2 class="text-xl font-bold text-slate-900">그로쓰 대시보드</h2>
+        <p class="text-xs text-slate-500 mt-1">인가된 담당자만 접근할 수 있습니다.</p>
+      </div>
+      <div>
+        <input type="password" id="pwInput" placeholder="비밀번호 입력" class="w-full border border-slate-300 rounded-xl px-4 py-3.5 text-center text-xl tracking-widest font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow" onkeypress="if(event.key==='Enter') checkAuth()">
+        <p id="pwError" class="text-xs text-rose-500 font-semibold mt-2 hidden">비밀번호가 일치하지 않습니다.</p>
+      </div>
+      <button onclick="checkAuth()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl transition-colors shadow-md">입장하기</button>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto space-y-4 sm:space-y-6 p-3 sm:p-6 opacity-0 transition-opacity duration-700" id="dashboardContent">
     
     <!-- 최상단 명언 롤링 & 모달 버튼 -->
     <div class="bg-slate-900 text-slate-100 p-4 sm:p-5 rounded-xl shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
       <div class="flex items-center gap-3 w-full md:w-auto overflow-hidden">
-        <span class="bg-indigo-600 text-white text-[11px] px-2.5 py-1 rounded-md font-bold whitespace-nowrap">💡윤병호 명언록</span>
+        <span class="bg-indigo-600 text-white text-[11px] px-2.5 py-1 rounded-md font-bold whitespace-nowrap">💡윤병호 명언</span>
         <div class="quote-ticker text-xs sm:text-sm font-medium text-slate-200 truncate" id="quoteTickerContainer">로딩 중...</div>
       </div>
       <button onclick="openExpectedPerformanceModal()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white text-xs font-bold py-2 px-4 rounded-lg shadow flex items-center gap-1.5 whitespace-nowrap">
@@ -104,7 +126,7 @@
         </div>
         <div class="flex items-center gap-3">
           <span id="footerPeriodLabel" class="text-xs text-slate-400">조회 구간: -</span>
-          <button onclick="openLogicModal()" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-1.5 px-3 rounded-lg border border-slate-200">📊 산출 근거 확인</button>
+          <button onclick="openLogicModal()" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-1.5 px-3 rounded-lg border border-slate-200 shadow-sm">📊 산출 근거 확인</button>
         </div>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs sm:text-sm">
@@ -126,10 +148,74 @@
     <!-- KPI 요약 카드 -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4" id="kpiContainer"></div>
 
+    <!-- 🔮 예산 시뮬레이터 -->
+    <div class="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-200 space-y-4 relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-bl-full -z-10 opacity-50"></div>
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+        <div class="flex items-center gap-2">
+          <span class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[11px] sm:text-xs px-2.5 py-0.5 rounded font-bold shadow-sm">🔮 그로쓰 시뮬레이터</span>
+          <h3 class="text-sm sm:text-base font-bold text-slate-800">예산 분배 및 예상 성과 (크로스 전환 반영)</h3>
+        </div>
+        <div class="flex items-center gap-2">
+          <select id="simChannelFilter" class="bg-slate-50 border border-slate-200 text-[11px] font-bold rounded-md px-2 py-1 text-slate-700 shadow-sm" onchange="triggerSimUpdate()">
+            <option value="ALL">통합 매체 기준</option>
+            <option value="메타">Meta 알고리즘 한정</option>
+            <option value="구글">Google 알고리즘 한정</option>
+          </select>
+          <button onclick="openSimLogicModal()" class="text-slate-400 hover:text-indigo-600 font-bold text-sm" title="산출근거">❓</button>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <!-- Input Area -->
+        <div class="col-span-1 space-y-4 bg-slate-50/80 p-4 rounded-xl border border-slate-200 shadow-inner">
+          <div>
+            <label class="text-xs font-bold text-slate-700 block mb-1.5">총 시뮬레이션 예산 (원)</label>
+            <input type="text" id="simTotalBudget" value="10,000,000" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow" oninput="formatSimBudget(this)">
+          </div>
+          <div class="pt-2">
+            <div class="flex justify-between text-xs font-bold text-slate-700 mb-2">
+              <span class="text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">판매 예산 <span id="simSalesPct">50%</span></span>
+              <span class="text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">매입 예산 <span id="simPurPct">50%</span></span>
+            </div>
+            <input type="range" id="simRatioSlider" min="0" max="100" value="50" class="w-full h-2.5 bg-gradient-to-r from-blue-400 to-purple-400 rounded-lg appearance-none cursor-pointer outline-none shadow-sm" oninput="updateSimulation()">
+            <div class="flex justify-between text-[11px] font-bold text-slate-600 mt-2">
+              <span id="simSalesBudgetTxt">5,000,000원</span>
+              <span id="simPurBudgetTxt">5,000,000원</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Output Area -->
+        <div class="col-span-1 lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="bg-white p-3 rounded-xl border border-blue-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute -right-2 -bottom-2 text-blue-50 opacity-50 text-5xl font-black">S</div>
+            <span class="text-[11px] font-bold text-blue-600 block mb-1 relative">예상 판매(구매) 전환</span>
+            <div class="text-lg sm:text-xl font-extrabold text-slate-900 relative" id="simExpPur">0건</div>
+            <div class="text-[10px] text-slate-500 mt-1 leading-tight relative" id="simDetailSales">-</div>
+          </div>
+          <div class="bg-white p-3 rounded-xl border border-purple-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute -right-2 -bottom-2 text-purple-50 opacity-50 text-5xl font-black">R</div>
+            <span class="text-[11px] font-bold text-purple-600 block mb-1 relative">예상 매입(예약) 전환</span>
+            <div class="text-lg sm:text-xl font-extrabold text-slate-900 relative" id="simExpReg">0건</div>
+            <div class="text-[10px] text-slate-500 mt-1 leading-tight relative" id="simDetailPur">-</div>
+          </div>
+          <div class="bg-white p-3 rounded-xl border border-emerald-200 shadow-sm flex flex-col justify-center bg-emerald-50/30">
+            <span class="text-[11px] font-bold text-emerald-700 block mb-1">합산 전환 합계</span>
+            <div class="text-xl sm:text-2xl font-black text-emerald-600" id="simExpTotal">0건</div>
+          </div>
+          <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-center bg-slate-800">
+            <span class="text-[11px] font-bold text-slate-300 block mb-1">평균 합산 CPA</span>
+            <div class="text-lg sm:text-xl font-bold text-white" id="simExpCpa">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 차트 영역 -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
       <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
-        <h2 class="text-sm sm:text-base font-semibold text-slate-800 mb-3" id="trendChartTitle">채널 통합 시계열 추이 (비용 vs 핵심전환수)</h2>
+        <h2 class="text-sm sm:text-base font-semibold text-slate-800 mb-3" id="trendChartTitle">채널 통합 시계열 추이 (비용 vs 합산 전환수)</h2>
         <div class="relative h-60 sm:h-80"><canvas id="trendChart"></canvas></div>
       </div>
       <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
@@ -154,8 +240,8 @@
               <th class="py-3 px-3 sm:px-4 text-right text-purple-700 font-bold" onclick="handleSort('cpa_reg')">매입 CPA <span class="sort-icon" id="sort-cpa_reg"></span></th>
               <th class="py-3 px-3 sm:px-4 text-right text-blue-700 bg-blue-50 font-bold" onclick="handleSort('pur')">판매(구매) <span class="sort-icon" id="sort-pur"></span></th>
               <th class="py-3 px-3 sm:px-4 text-right text-blue-700 font-bold" onclick="handleSort('cpa_pur')">판매 CPA <span class="sort-icon" id="sort-cpa_pur"></span></th>
-              <th class="py-3 px-3 sm:px-4 text-right text-emerald-700 bg-emerald-50 font-bold" onclick="handleSort('total_conv')">총 전환수 <span class="sort-icon" id="sort-total_conv"></span></th>
-              <th class="py-3 px-3 sm:px-4 text-right text-emerald-700 font-bold" onclick="handleSort('cpa_total')">핵심 CPA <span class="sort-icon" id="sort-cpa_total"></span></th>
+              <th class="py-3 px-3 sm:px-4 text-right text-emerald-700 bg-emerald-50 font-bold" onclick="handleSort('total_conv')">합산 전환수 <span class="sort-icon" id="sort-total_conv"></span></th>
+              <th class="py-3 px-3 sm:px-4 text-right text-emerald-700 font-bold" onclick="handleSort('cpa_total')">평균 합산 CPA <span class="sort-icon" id="sort-cpa_total"></span></th>
               <th class="py-3 px-3 sm:px-4 text-right text-indigo-700 font-bold" onclick="handleSort('cvr')">CVR(%) <span class="sort-icon" id="sort-cvr"></span></th>
               <th class="py-3 px-3 sm:px-4 text-right font-bold" onclick="handleSort('roas')">ROAS <span class="sort-icon" id="sort-roas"></span></th>
             </tr>
@@ -166,7 +252,7 @@
     </div>
   </div>
 
-  <!-- 산출 근거 모달 -->
+  <!-- 일반 산출 근거 모달 -->
   <div id="logicModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center modal-overlay p-4">
     <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 modal-content relative">
       <div class="flex items-center justify-between border-b pb-3">
@@ -186,6 +272,26 @@
     </div>
   </div>
 
+  <!-- 시뮬레이터 전용 산출 근거 모달 -->
+  <div id="simLogicModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center modal-overlay p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 modal-content relative">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="text-base font-bold text-slate-900">🔮 시뮬레이션 산출 근거</h3>
+        <button onclick="closeSimLogicModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl leading-none">&times;</button>
+      </div>
+      <div class="space-y-3 text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
+        <div class="bg-slate-50 p-4 rounded-xl border space-y-3">
+          <p><span class="font-bold text-purple-600 block mb-1">1. 교차 CPA (Cross-CPA) 연산</span>현재 조회된 실제 누적 데이터를 바탕으로, 판매 캠페인이 일으킨 매입 전환과 매입 캠페인이 일으킨 판매 전환의 <b>'시너지 단가(Halo Effect)'</b>를 각각 분리 추출합니다.</p>
+          <div class="border-t border-slate-200"></div>
+          <p><span class="font-bold text-blue-600 block mb-1">2. 채널별 알고리즘 분리 적용</span>우측 상단의 토글을 통해, 메타(Meta)와 구글(Google) 각 매체의 뚜렷한 전환 성향과 알고리즘 차이를 독립적으로 분리하여 시뮬레이션할 수 있습니다.</p>
+          <div class="border-t border-slate-200"></div>
+          <p><span class="font-bold text-emerald-600 block mb-1">3. 최종 통합 지표 역산</span>입력된 예산과 슬라이더 비율에 맞춰, 직접 전환수와 교차 전환수(시너지)를 합산하여 최종 예상 <b>평균 합산 CPA</b>를 실시간 도출합니다.</p>
+        </div>
+      </div>
+      <button onclick="closeSimLogicModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-sm transition-colors mt-2">확인</button>
+    </div>
+  </div>
+
   <!-- 예상 성과 모달 -->
   <div id="expectedModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center modal-overlay p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 modal-content relative">
@@ -199,7 +305,7 @@
           <div class="flex justify-between items-center"><span class="font-semibold">예상 집행비용:</span><span id="modalExpSpend" class="font-bold text-slate-900">-</span></div>
           <div class="flex justify-between items-center text-purple-700"><span class="font-semibold">예상 매입(예약):</span><span id="modalExpReg" class="font-bold">-</span></div>
           <div class="flex justify-between items-center text-blue-700"><span class="font-semibold">예상 판매(구매):</span><span id="modalExpPur" class="font-bold">-</span></div>
-          <div class="border-t border-slate-200 pt-2 mt-1 flex justify-between items-center text-emerald-700"><span class="font-bold">전환 합계:</span><span id="modalExpTotal" class="font-bold text-base">-</span></div>
+          <div class="border-t border-slate-200 pt-2 mt-1 flex justify-between items-center text-emerald-700"><span class="font-bold">합산 전환:</span><span id="modalExpTotal" class="font-bold text-base">-</span></div>
         </div>
       </div>
       <button onclick="closeExpectedPerformanceModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-sm transition-colors mt-2">닫기</button>
@@ -207,9 +313,48 @@
   </div>
 
   <script>
+    // --- 인증 및 보안 로직 ---
+    document.addEventListener("DOMContentLoaded", () => {
+      if(sessionStorage.getItem('ybh_auth_granted') === 'true') {
+        unlockDashboard();
+      }
+    });
+
+    function checkAuth() {
+      const val = document.getElementById('pwInput').value;
+      if (val === '1119') {
+        sessionStorage.setItem('ybh_auth_granted', 'true');
+        unlockDashboard();
+      } else {
+        document.getElementById('pwError').classList.remove('hidden');
+      }
+    }
+
+    function unlockDashboard() {
+      const login = document.getElementById('loginScreen');
+      const content = document.getElementById('dashboardContent');
+      const body = document.getElementById('mainBody');
+      
+      login.style.opacity = '0';
+      setTimeout(() => {
+        login.style.display = 'none';
+        content.classList.remove('opacity-0');
+        body.classList.remove('overflow-hidden');
+      }, 500);
+    }
+
+    // --- 글로벌 변수 ---
     const SPREADSHEET_ID = "1pTLAXzXDoxAg_Vhkt8yFxXQ7wF7bT2Q_9t8BdScEnIc";
     const SHEET_NAME = "Raw";
     const EXCHANGE_RATE = 1547;
+    const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQY_lZWa4w9WJ2dWvpofp6a4Vk1qhDF-y_KNArVqy-ExKQ6SSibMV-y-BwhHX0mMbPDgjFrSD86tigi/pub?gid=1811588047&single=true&output=csv";
+
+    let rawDailyData = [];
+    let sortCol = 'spend';
+    let sortDesc = true;
+    let trendChartInstance = null;
+    let topChartInstance = null;
+    let simHistoricalData = { salesToPurCPA: 0, salesToRegCPA: 0, purToRegCPA: 0, purToPurCPA: 0 };
 
     const BASE_DATA = [
       ["2026-09-06","매입_전환이벤트 2505_영상","메타",462182,18,0,0,33728,355,"매입"],
@@ -218,35 +363,39 @@
       ["2026-09-06","판매_전환어드벤티지 아이폰소재","메타",135595,1,7,6558522,12462,158,"판매"]
     ];
 
+    // --- 명언 롤링 로직 (트랜지션 보완) ---
     const growthQuotes = [
       "완벽한 타이밍 기다리다가 영원히 제자리일 것이다", "그냥 해라, 반은 간다 밤을 새워서라도 해내라",
-      "성과는 잔고와 비례한다", "롤모델을 묻는다면 이동민이라 답한다",
-      "우리는 아무도 범접할 수 없는 부자가 된다", "뒤도 돌아보지말고 앞으로만 가라, 우리에겐 성과뿐이다"
+      "성과는 잔고와 비례한다", "우리는 아무도 범접할 수 없는 부자가 된다", "뒤도 돌아보지말고 앞으로만 가라, 우리에겐 성과뿐이다"
     ];
     let quoteIdx = 0;
     document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById('quoteTickerContainer').textContent = growthQuotes[0];
+      const tk = document.getElementById('quoteTickerContainer');
+      if (tk) tk.textContent = growthQuotes[0];
       setInterval(() => {
         quoteIdx = (quoteIdx + 1) % growthQuotes.length;
-        const tk = document.getElementById('quoteTickerContainer');
-        if (tk) { tk.style.opacity = 0; setTimeout(() => { tk.textContent = growthQuotes[quoteIdx]; tk.style.opacity = 1; }, 300); }
+        if (tk) { 
+          tk.style.opacity = 0; 
+          setTimeout(() => { 
+            tk.textContent = growthQuotes[quoteIdx]; 
+            tk.style.opacity = 1; 
+          }, 500); 
+        }
       }, 4500);
     });
 
+    // --- 모달 제어 ---
     function openLogicModal() { document.getElementById('logicModal').classList.add('active'); }
     function closeLogicModal() { document.getElementById('logicModal').classList.remove('active'); }
+    function openSimLogicModal() { document.getElementById('simLogicModal').classList.add('active'); }
+    function closeSimLogicModal() { document.getElementById('simLogicModal').classList.remove('active'); }
     function openExpectedPerformanceModal() { 
       document.getElementById('expectedModal').classList.add('active'); 
       calculateExpectedPerformance();
     }
     function closeExpectedPerformanceModal() { document.getElementById('expectedModal').classList.remove('active'); }
 
-    let rawDailyData = [];
-    let sortCol = 'spend';
-    let sortDesc = true;
-    let trendChartInstance = null;
-    let topChartInstance = null;
-
+    // --- 유틸 함수 ---
     function getIsoWeek(date) {
       const tempDate = new Date(date.valueOf());
       const dayn = (date.getDay() + 6) % 7; tempDate.setDate(tempDate.getDate() - dayn + 3);
@@ -292,9 +441,19 @@
       return `<span class="text-[10px] sm:text-xs ${colorClass} block">${isUp ? '▲' : '▼'} ${Math.abs(pct).toFixed(1)}%</span>`;
     }
 
-    /* ============================================================
-       가로 병렬 배치 시트 전용 파서 (메타 + 구글 좌우 분리 스캔)
-       ============================================================ */
+    // --- 시뮬레이터 전용 금액 포매터 ---
+    function formatSimBudget(inputEl) {
+      let val = inputEl.value.replace(/,/g, '').replace(/[^0-9]/g, '');
+      if(val === '') val = '0';
+      inputEl.value = Number(val).toLocaleString();
+      updateSimulation();
+    }
+    
+    function getSimBudget() {
+      return Number(document.getElementById('simTotalBudget').value.replace(/,/g, '')) || 0;
+    }
+
+    // --- 파서 로직 ---
     function processDualColumnSheet(rows) {
       const parsed = [];
       if (!rows || rows.length < 2) return;
@@ -307,13 +466,9 @@
         const rowStr = row.join(' ');
 
         if (rowStr.includes('지출 금액') || rowStr.includes('노출수') || rowStr.includes('캠페인')) {
-          metaMap = {};
-          googleMap = {};
-
+          metaMap = {}; googleMap = {};
           row.forEach((colName, idx) => {
             const h = String(colName).trim().replace(/^\ufeff/, '');
-            
-            // 메타 헤더 맵핑
             if (h === '광고 세트 이름') metaMap.name = idx;
             if (h === '일' && metaMap.date === undefined) metaMap.date = idx;
             if (h === '노출') metaMap.imp = idx;
@@ -323,7 +478,6 @@
             if (h === '구매') metaMap.pur = idx;
             if (h.includes('전환값')) metaMap.rev = idx;
 
-            // 구글 헤더 맵핑
             if (h === '캠페인') googleMap.name = idx;
             if ((h === '일' || h === 'Day' || h === '날짜') && metaMap.date !== undefined && idx > metaMap.date) googleMap.date = idx;
             if (h === '노출수') googleMap.imp = idx;
@@ -335,28 +489,21 @@
         }
       }
 
-      if (!metaMap || metaMap.name === undefined) {
-        metaMap = { name: 1, date: 2, imp: 3, clicks: 4, spend: 5, reg: 6, pur: 8, rev: 9 };
-      }
-      if (!googleMap || googleMap.name === undefined) {
-        googleMap = { name: 14, date: 16, imp: 17, clicks: 18, spend: 20, results: 21 };
-      }
+      if (!metaMap || metaMap.name === undefined) metaMap = { name: 1, date: 2, imp: 3, clicks: 4, spend: 5, reg: 6, pur: 8, rev: 9 };
+      if (!googleMap || googleMap.name === undefined) googleMap = { name: 14, date: 16, imp: 17, clicks: 18, spend: 20, results: 21 };
 
       rows.forEach(row => {
         if (!row || row.length === 0) return;
 
-        // [좌측 메타 영역 처리]
         if (metaMap.date !== undefined && metaMap.name !== undefined && row[metaMap.date]) {
           const mDate = normalizeDate(row[metaMap.date]);
           const mName = String(row[metaMap.name] || '').trim();
-
           if (mDate && mName && mName !== '광고 세트 이름' && !mName.includes('총계')) {
             const rawSpend = parseFloat(String(row[metaMap.spend] || '0').replace(/,/g, '').replace(/\$/g, '')) || 0;
             const spendKrw = Math.round(rawSpend * EXCHANGE_RATE);
             const reg = parseFloat(String(row[metaMap.reg] || '0').replace(/,/g, '')) || 0;
             const pur = parseFloat(String(row[metaMap.pur] || '0').replace(/,/g, '')) || 0;
-            const rawRev = parseFloat(String(row[metaMap.rev] || '0').replace(/,/g, '').replace(/\$/g, '')) || 0;
-            const revKrw = Math.round(rawRev * EXCHANGE_RATE);
+            const revKrw = Math.round((parseFloat(String(row[metaMap.rev] || '0').replace(/,/g, '').replace(/\$/g, '')) || 0) * EXCHANGE_RATE);
             const imp = parseInt(String(row[metaMap.imp] || '0').replace(/,/g, '')) || 0;
             const clicks = parseInt(String(row[metaMap.clicks] || '0').replace(/,/g, '')) || 0;
 
@@ -365,18 +512,13 @@
             const type = isBuy ? '매입' : (isSale ? '판매' : '혼합');
 
             const wInfo = calculateWeekRange(mDate);
-            parsed.push({
-              date: mDate, week_id: wInfo.id, week_label: wInfo.label, week_no: wInfo.weekNo,
-              name: mName, channel: '메타', spend: spendKrw, reg: reg, pur: pur, rev: revKrw, imp: imp, clicks: clicks, type: type
-            });
+            parsed.push({ date: mDate, week_id: wInfo.id, week_label: wInfo.label, week_no: wInfo.weekNo, name: mName, channel: '메타', spend: spendKrw, reg: reg, pur: pur, rev: revKrw, imp: imp, clicks: clicks, type: type });
           }
         }
 
-        // [우측 구글 영역 처리]
         if (googleMap.date !== undefined && googleMap.name !== undefined && row[googleMap.date]) {
           const gDate = normalizeDate(row[googleMap.date]);
           const gName = String(row[googleMap.name] || '').trim();
-
           if (gDate && gName && gName !== '캠페인' && !gName.includes('총계')) {
             const spendKrw = parseInt(String(row[googleMap.spend] || '0').replace(/,/g, '')) || 0;
             const imp = parseInt(String(row[googleMap.imp] || '0').replace(/,/g, '')) || 0;
@@ -398,10 +540,7 @@
             const type = isBuy ? '매입' : (isSale ? '판매' : '혼합');
 
             const wInfo = calculateWeekRange(gDate);
-            parsed.push({
-              date: gDate, week_id: wInfo.id, week_label: wInfo.label, week_no: wInfo.weekNo,
-              name: gName, channel: '구글', spend: spendKrw, reg: reg, pur: pur, rev: 0, imp: imp, clicks: clicks, type: type
-            });
+            parsed.push({ date: gDate, week_id: wInfo.id, week_label: wInfo.label, week_no: wInfo.weekNo, name: gName, channel: '구글', spend: spendKrw, reg: reg, pur: pur, rev: 0, imp: imp, clicks: clicks, type: type });
           }
         }
       });
@@ -411,72 +550,110 @@
       renderDashboard();
     }
 
-    /* ============================================================
-       구글 시각화(GViz) JSONP 연동 엔진 (CORS 제약 100% 우회)
-       ============================================================ */
     function fetchGoogleSheetData() {
       updateStatusBadge("구글 시트 연동 중...", false);
-
       const oldScript = document.getElementById("gviz_jsonp_script");
       if (oldScript) oldScript.remove();
 
       window.googleSheetDataCallback = function(json) {
         try {
-          if (!json || !json.table || !json.table.rows) {
-            throw new Error("데이터 구조 오류");
-          }
-
+          if (!json || !json.table || !json.table.rows) throw new Error("데이터 구조 오류");
           const headerRow = json.table.cols.map(c => (c && c.label) ? c.label : '');
-          const dataRows = json.table.rows.map(r => {
-            return r.c.map(cell => {
-              if (!cell) return '';
-              return (cell.f !== undefined && cell.f !== null) ? cell.f : ((cell.v !== undefined && cell.v !== null) ? cell.v : '');
-            });
-          });
-
-          const fullGrid = [headerRow, ...dataRows];
-          processDualColumnSheet(fullGrid);
+          const dataRows = json.table.rows.map(r => r.c.map(cell => (!cell) ? '' : (cell.f !== undefined && cell.f !== null) ? cell.f : ((cell.v !== undefined && cell.v !== null) ? cell.v : '')));
+          processDualColumnSheet([headerRow, ...dataRows]);
 
           if (rawDailyData.length > 0) {
             updateStatusBadge(`✓ 실시간 시트 동기화 완료 (${rawDailyData.length}행)`, true);
           } else {
-            updateStatusBadge("시트 연동 실패(기본 데이터 로드)", false);
-            loadFallbackData();
+            updateStatusBadge("시트 연동 실패(기본 데이터 로드)", false); loadFallbackData();
           }
-        } catch (e) {
-          console.error("Parse Error:", e);
-          updateStatusBadge("시트 연동 실패(기본 데이터 로드)", false);
-          loadFallbackData();
-        }
+        } catch (e) { console.error("Parse Error:", e); updateStatusBadge("시트 연동 실패(기본 데이터 로드)", false); loadFallbackData(); }
       };
 
       const script = document.createElement('script');
       script.id = "gviz_jsonp_script";
       script.src = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=responseHandler:googleSheetDataCallback&sheet=${encodeURIComponent(SHEET_NAME)}&t=${Date.now()}`;
-      script.onerror = function() {
-        console.error("GViz script load failed");
-        updateStatusBadge("시트 연동 실패(기본 데이터 로드)", false);
-        loadFallbackData();
-      };
+      script.onerror = function() { updateStatusBadge("시트 연동 실패(기본 데이터 로드)", false); loadFallbackData(); };
       document.body.appendChild(script);
     }
 
     function loadFallbackData() {
       rawDailyData = BASE_DATA.map(item => {
         const wInfo = calculateWeekRange(item[0]);
-        return {
-          date: item[0], week_id: wInfo.id, week_label: wInfo.label, week_no: wInfo.weekNo,
-          name: item[1], channel: item[2], spend: item[3], reg: item[4], pur: item[5], rev: item[6], imp: item[7], clicks: item[8], type: item[9]
-        };
+        return { date: item[0], week_id: wInfo.id, week_label: wInfo.label, week_no: wInfo.weekNo, name: item[1], channel: item[2], spend: item[3], reg: item[4], pur: item[5], rev: item[6], imp: item[7], clicks: item[8], type: item[9] };
       });
       updatePeriodFilterOptions();
       renderDashboard();
     }
 
+    // 🔮 시뮬레이터 트리거 및 연산
+    function triggerSimUpdate() {
+      const mode = document.getElementById('timeViewMode').value;
+      const selType = document.getElementById('typeFilter').value;
+      const selCh = document.getElementById('channelFilter').value;
+      const simCh = document.getElementById('simChannelFilter').value;
+      const selPeriod = document.getElementById('timePeriodFilter').value;
+
+      const f = d => {
+        let passCh = (simCh === 'ALL') ? (selCh === 'ALL' || d.channel === selCh) : (d.channel === simCh);
+        return (selType === 'ALL' || d.type === selType) && passCh && (mode === 'WEEK' ? d.week_id === selPeriod : d.date === selPeriod);
+      };
+      calculateSimulatorEfficiency(f);
+    }
+
+    function calculateSimulatorEfficiency(filterFn) {
+      const targetList = rawDailyData.filter(filterFn);
+      let sSpend = 0, sPur = 0, sReg = 0;
+      let pSpend = 0, pPur = 0, pReg = 0;
+
+      targetList.forEach(d => {
+        if (d.type === '판매') { sSpend += d.spend; sPur += d.pur; sReg += d.reg; } 
+        else if (d.type === '매입') { pSpend += d.spend; pPur += d.pur; pReg += d.reg; }
+      });
+
+      simHistoricalData.salesToPurCPA = sPur > 0 ? sSpend / sPur : Infinity;
+      simHistoricalData.salesToRegCPA = sReg > 0 ? sSpend / sReg : Infinity;
+      simHistoricalData.purToRegCPA = pReg > 0 ? pSpend / pReg : Infinity;
+      simHistoricalData.purToPurCPA = pPur > 0 ? pSpend / pPur : Infinity;
+      
+      updateSimulation();
+    }
+
+    function updateSimulation() {
+      const totalBudget = getSimBudget();
+      const salesRatio = parseFloat(document.getElementById('simRatioSlider').value) / 100;
+      const purRatio = 1 - salesRatio;
+
+      const salesBudget = totalBudget * salesRatio;
+      const purBudget = totalBudget * purRatio;
+
+      document.getElementById('simSalesPct').textContent = Math.round(salesRatio * 100) + '%';
+      document.getElementById('simPurPct').textContent = Math.round(purRatio * 100) + '%';
+      document.getElementById('simSalesBudgetTxt').textContent = formatCurrency(salesBudget);
+      document.getElementById('simPurBudgetTxt').textContent = formatCurrency(purBudget);
+
+      let expPurFromSales = simHistoricalData.salesToPurCPA !== Infinity ? salesBudget / simHistoricalData.salesToPurCPA : 0;
+      let expRegFromSales = simHistoricalData.salesToRegCPA !== Infinity ? salesBudget / simHistoricalData.salesToRegCPA : 0;
+      let expRegFromPur = simHistoricalData.purToRegCPA !== Infinity ? purBudget / simHistoricalData.purToRegCPA : 0;
+      let expPurFromPur = simHistoricalData.purToPurCPA !== Infinity ? purBudget / simHistoricalData.purToPurCPA : 0;
+
+      const totalExpPur = expPurFromSales + expPurFromPur;
+      const totalExpReg = expRegFromSales + expRegFromPur;
+      const totalConvs = totalExpPur + totalExpReg;
+      const blendedCPA = totalConvs > 0 ? totalBudget / totalConvs : 0;
+
+      document.getElementById('simExpPur').textContent = formatNumber(totalExpPur) + '건';
+      document.getElementById('simExpReg').textContent = formatNumber(totalExpReg) + '건';
+      document.getElementById('simExpTotal').textContent = formatNumber(totalConvs) + '건';
+      document.getElementById('simExpCpa').textContent = formatCurrency(blendedCPA);
+      
+      document.getElementById('simDetailSales').innerHTML = `판매직접: <b>${formatNumber(expPurFromSales)}</b>건<br><span class="text-indigo-500">+매입시너지: <b>${formatNumber(expPurFromPur)}</b>건</span>`;
+      document.getElementById('simDetailPur').innerHTML = `매입직접: <b>${formatNumber(expRegFromPur)}</b>건<br><span class="text-indigo-500">+판매시너지: <b>${formatNumber(expRegFromSales)}</b>건</span>`;
+    }
+
     function aggregateData(filterFn) {
       const targetList = rawDailyData.filter(filterFn);
-      const map = {};
-      let tSpend = 0, tReg = 0, tPur = 0, tRev = 0, tClicks = 0;
+      const map = {}; let tSpend = 0, tReg = 0, tPur = 0, tRev = 0, tClicks = 0;
 
       targetList.forEach(d => {
         tSpend += d.spend; tReg += d.reg; tPur += d.pur; tRev += d.rev; tClicks += d.clicks;
@@ -489,21 +666,14 @@
         const i = map[k]; const conv = i.reg + i.pur;
         return {
           name: i.name, channel: i.channel, spend: i.spend, reg: i.reg, pur: i.pur, clicks: i.clicks,
-          total_conv: conv, 
-          cpa_reg: i.reg > 0 ? i.spend/i.reg : Infinity, 
-          cpa_pur: i.pur > 0 ? i.spend/i.pur : Infinity,
-          cpa_total: conv > 0 ? i.spend/conv : Infinity, 
-          cvr: i.clicks > 0 ? (conv / i.clicks) * 100 : 0,
-          roas: i.spend > 0 ? (i.rev/i.spend)*100 : 0
+          total_conv: conv, cpa_reg: i.reg > 0 ? i.spend/i.reg : Infinity, cpa_pur: i.pur > 0 ? i.spend/i.pur : Infinity,
+          cpa_total: conv > 0 ? i.spend/conv : Infinity, cvr: i.clicks > 0 ? (conv / i.clicks) * 100 : 0, roas: i.spend > 0 ? (i.rev/i.spend)*100 : 0
         };
       });
 
       return {
-        summary: {
-          spend: tSpend, reg: tReg, pur: tPur, total_conv: tReg + tPur,
-          cpa_reg: tReg > 0 ? tSpend/tReg : 0, cpa_pur: tPur > 0 ? tSpend/tPur : 0,
-          cpa_total: (tReg + tPur) > 0 ? tSpend/(tReg + tPur) : 0, roas: tSpend > 0 ? (tRev/tSpend)*100 : 0
-        }, itemsMap: map, itemsList: items
+        summary: { spend: tSpend, reg: tReg, pur: tPur, total_conv: tReg + tPur, cpa_reg: tReg > 0 ? tSpend/tReg : 0, cpa_pur: tPur > 0 ? tSpend/tPur : 0, cpa_total: (tReg + tPur) > 0 ? tSpend/(tReg + tPur) : 0, roas: tSpend > 0 ? (tRev/tSpend)*100 : 0 },
+        itemsMap: map, itemsList: items
       };
     }
 
@@ -540,11 +710,9 @@
       const uniqueDates = [...new Set(rawDailyData.map(d => d.date))].sort();
       const recentDates = uniqueDates.slice(-7);
       const recentList = rawDailyData.filter(d => recentDates.includes(d.date));
-      
       let tSp = 0, tReg = 0, tPur = 0;
       recentList.forEach(d => { tSp += d.spend; tReg += d.reg; tPur += d.pur; });
       const dCnt = recentDates.length || 1;
-      
       document.getElementById('modalExpSpend').textContent = formatCurrency(tSp / dCnt);
       document.getElementById('modalExpReg').textContent = formatNumber(tReg / dCnt) + '건';
       document.getElementById('modalExpPur').textContent = formatNumber(tPur / dCnt) + '건';
@@ -559,14 +727,16 @@
       const selPeriod = document.getElementById('timePeriodFilter').value;
       const prevPeriod = getPreviousPeriodIdentifier(mode, selPeriod);
 
-      const f = d => (selType === 'ALL' || d.type === selType) && (selCh === 'ALL' || d.channel === selCh);
-      const curF = d => f(d) && (mode === 'WEEK' ? d.week_id === selPeriod : d.date === selPeriod);
+      const f = d => (selType === 'ALL' || d.type === selType) && (selCh === 'ALL' || d.channel === selCh) && (mode === 'WEEK' ? d.week_id === selPeriod : d.date === selPeriod);
       const prevF = d => prevPeriod && f(d) && (mode === 'WEEK' ? d.week_id === prevPeriod : d.date === prevPeriod);
 
-      const curr = aggregateData(curF); const prev = prevPeriod ? aggregateData(prevF) : null;
+      const curr = aggregateData(f); const prev = prevPeriod ? aggregateData(prevF) : null;
 
       renderHeaderBriefing(curr.summary, curr.itemsList, selPeriod);
       renderKpis(curr.summary, prev ? prev.summary : null, curr.itemsList);
+      
+      triggerSimUpdate(); // 시뮬레이터 분리 연산
+
       renderTrendChart(mode, selType, selCh); 
       renderTopChart(curr.itemsList);
       renderTable(curr.itemsList, prev ? prev.itemsMap : null);
@@ -581,7 +751,7 @@
       const bests = validCpas.length > 0 ? [...validItems].sort((a,b) => a.cpa_total - b.cpa_total).slice(0, 2) : [];
       const worsts = validCpas.length > 0 ? [...validItems].sort((a,b) => b.cpa_total - a.cpa_total).slice(0, 2) : [];
 
-      let summaryText = `총 집행비용 ${formatCurrency(summary.spend)}으로 핵심 전환 ${formatNumber(summary.total_conv)}건 확보. 통합 CPA ${formatCurrency(summary.cpa_total)}. `;
+      let summaryText = `총 집행비용 ${formatCurrency(summary.spend)}으로 합산 전환 ${formatNumber(summary.total_conv)}건 확보. 평균 합산 CPA ${formatCurrency(summary.cpa_total)}. `;
       summaryText += (summary.cpa_total <= benchmarkCpa) ? `효율이 안정적이므로 예산 증액을 권장합니다.` : `효율 저하 캠페인 감액 및 교체가 시급합니다.`;
       document.getElementById('footerSummaryText').textContent = summaryText;
 
@@ -598,10 +768,10 @@
         { label: '통합 총 비용', val: formatCurrency(curr.spend), b: calculateTrendBadge(curr.spend, prev?.spend, true), extra: totalSpendBadge },
         { label: '매입(예약) 전환', val: formatNumber(curr.reg) + '건', b: calculateTrendBadge(curr.reg, prev?.reg, false) },
         { label: '판매(구매) 전환', val: formatNumber(curr.pur) + '건', b: calculateTrendBadge(curr.pur, prev?.pur, false) },
-        { label: '핵심 전환 합계', val: formatNumber(curr.total_conv) + '건', b: calculateTrendBadge(curr.total_conv, prev?.total_conv, false) },
+        { label: '합산 전환 합계', val: formatNumber(curr.total_conv) + '건', b: calculateTrendBadge(curr.total_conv, prev?.total_conv, false) },
         { label: '평균 매입 CPA', val: curr.reg > 0 ? formatCurrency(curr.cpa_reg) : '-', b: calculateTrendBadge(curr.cpa_reg, prev?.cpa_reg, true) },
         { label: '평균 판매 CPA', val: curr.pur > 0 ? formatCurrency(curr.cpa_pur) : '-', b: calculateTrendBadge(curr.cpa_pur, prev?.cpa_pur, true) },
-        { label: '핵심 통합 CPA', val: curr.total_conv > 0 ? formatCurrency(curr.cpa_total) : '-', b: calculateTrendBadge(curr.cpa_total, prev?.cpa_total, true) },
+        { label: '평균 합산 CPA', val: curr.total_conv > 0 ? formatCurrency(curr.cpa_total) : '-', b: calculateTrendBadge(curr.cpa_total, prev?.cpa_total, true) },
         { label: '통합 ROAS', val: curr.spend > 0 && curr.roas > 0 ? curr.roas.toFixed(1) + '%' : '-', b: calculateTrendBadge(curr.roas, prev?.roas, false) }
       ];
 
@@ -638,7 +808,7 @@
           labels: keys.map(k => map[k].label),
           datasets: [
             { label: '총 비용(KRW)', data: keys.map(k => map[k].spend), backgroundColor: '#3b82f6', yAxisID: 'yS', borderRadius: 3 },
-            { label: '핵심 전환수', type: 'line', data: keys.map(k => map[k].conv), borderColor: '#10b981', yAxisID: 'yC', tension: 0.2, pointRadius: 2 }
+            { label: '합산 전환수', type: 'line', data: keys.map(k => map[k].conv), borderColor: '#10b981', yAxisID: 'yC', tension: 0.2, pointRadius: 2 }
           ]
         },
         options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, scales: { yS: { type: 'linear', position: 'left', ticks: { callback: v => (v/10000).toLocaleString() + '만' } }, yC: { type: 'linear', position: 'right', grid: { drawOnChartArea: false } } } }
@@ -657,7 +827,7 @@
         data: {
           labels: top.map(n => n.name.length > 8 ? n.name.substring(0, 8) + '..' : n.name),
           datasets: [
-            { label: '핵심 CPA', data: top.map(d => d.cpa_total === Infinity ? 0 : d.cpa_total), backgroundColor: '#10b981', yAxisID: 'yC', borderRadius: 3 },
+            { label: '평균 합산 CPA', data: top.map(d => d.cpa_total === Infinity ? 0 : d.cpa_total), backgroundColor: '#10b981', yAxisID: 'yC', borderRadius: 3 },
             { label: 'ROAS(%)', data: top.map(d => d.roas), backgroundColor: '#6366f1', yAxisID: 'yR', borderRadius: 3 }
           ]
         },
@@ -677,9 +847,9 @@
         const isGoogle = c.channel === '구글';
 
         if (c.total_conv > 0 && c.cpa_total <= benchmarkCpa * 0.8) {
-          badgeHtml = `<span class="${isGoogle ? 'badge-thumb-google' : 'badge-thumb-meta'}">👍 최고효율</span>`; budgetAction = '<span class="badge-up">증액</span>';
+          badgeHtml = `<span class="${isGoogle ? 'badge-thumb-google' : 'badge-thumb-meta'}">👍고효율</span>`; budgetAction = '<span class="badge-up">증액</span>';
         } else if ((c.total_conv === 0 && c.spend > 50000) || c.cpa_total > benchmarkCpa * 1.3) {
-          badgeHtml = `<span class="${isGoogle ? 'badge-replace-google' : 'badge-replace-meta'}">🚨 교체시급</span>`; budgetAction = '<span class="badge-down">감액</span>';
+          badgeHtml = `<span class="${isGoogle ? 'badge-replace-google' : 'badge-replace-meta'}">🚨 저효율</span>`; budgetAction = '<span class="badge-down">감액</span>';
         } else {
           badgeHtml = `<span class="${isGoogle ? 'badge-keep-google' : 'badge-keep-meta'}">✋ 유지</span>`; budgetAction = '<span class="text-slate-400 text-[10px] font-semibold">유지</span>';
         }
@@ -729,10 +899,7 @@
       document.getElementById(id).addEventListener('change', () => { if(id !== 'timePeriodFilter') updatePeriodFilterOptions(); renderDashboard(); });
     });
 
-    async function boot() {
-      fetchGoogleSheetData();
-    }
-    
+    async function boot() { fetchGoogleSheetData(); }
     boot();
   </script>
 </body>
