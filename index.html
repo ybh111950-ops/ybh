@@ -89,7 +89,7 @@
       </button>
     </div>
 
-    <!-- 컨트롤러 영역 -->
+    <!-- 컨트롤러 영역 (자유 캘린더 기간 설정 추가) -->
     <div class="bg-white p-4 sm:px-5 sm:py-3.5 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
       <div class="flex flex-wrap items-center gap-2 sm:gap-3">
         <h1 class="text-base sm:text-lg font-bold text-slate-900">통합 대시보드</h1>
@@ -111,7 +111,11 @@
         <select id="typeFilter" class="bg-white border border-slate-300 text-xs font-medium rounded-lg px-2.5 py-2 w-full sm:w-auto">
           <option value="ALL">전체 BM</option><option value="판매">판매(구매)</option><option value="매입">매입(예약)</option>
         </select>
+        
+        <!-- 기본 주차/일자 선택 드롭다운 -->
         <select id="timePeriodFilter" class="col-span-2 sm:col-span-1 bg-white border border-slate-300 text-xs font-medium rounded-lg px-3 py-2 min-w-full sm:min-w-[190px]"></select>
+        
+        <!-- 사용자 지정 캘린더 일자 선택기 (숨김 기본) -->
         <div id="customDateRangeBox" class="col-span-2 hidden flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-lg border border-slate-200 text-xs">
           <input type="date" id="customStartDate" class="bg-white border border-slate-300 rounded px-2 py-1 text-xs font-medium" onchange="renderDashboard()">
           <span class="text-slate-400">~</span>
@@ -165,11 +169,13 @@
             <option value="메타">Meta 알고리즘 한정</option>
             <option value="구글">Google 알고리즘 한정</option>
           </select>
+          <!-- 우측 상단 '산출 근거 확인' 버튼으로 수정 -->
           <button onclick="openSimLogicModal()" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-1.5 px-3 rounded-lg border border-slate-200 shadow-sm flex items-center gap-1">📊 산출 근거 확인</button>
         </div>
       </div>
       
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <!-- Input Area -->
         <div class="col-span-1 space-y-4 bg-slate-50/80 p-4 rounded-xl border border-slate-200 shadow-inner">
           <div>
             <label class="text-xs font-bold text-slate-700 block mb-1.5">총 시뮬레이션 예산 (원)</label>
@@ -188,6 +194,7 @@
           </div>
         </div>
 
+        <!-- Output Area (평균 합산 CPA 카드 노출 보장) -->
         <div class="col-span-1 lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div class="bg-white p-3 rounded-xl border border-blue-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
             <div class="absolute -right-2 -bottom-2 text-blue-50 opacity-50 text-5xl font-black">S</div>
@@ -205,6 +212,7 @@
             <span class="text-[11px] font-bold text-emerald-700 block mb-1">합산 전환 합계</span>
             <div class="text-xl sm:text-2xl font-black text-emerald-600" id="simExpTotal">0건</div>
           </div>
+          <!-- 평균 합산 CPA 카드 명확히 노출 -->
           <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-center bg-slate-900 text-white">
             <span class="text-[11px] font-bold text-slate-300 block mb-1">평균 합산 CPA</span>
             <div class="text-lg sm:text-xl font-bold text-white" id="simExpCpa">-</div>
@@ -225,11 +233,12 @@
       </div>
     </div>
 
-    <!-- 데이터 테이블 -->
+    <!-- 데이터 테이블 (All/Meta/Google 채널 버튼 추가 및 레이아웃 최적화) -->
     <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div class="flex flex-wrap items-center gap-3">
           <h2 class="text-sm sm:text-base font-semibold text-slate-800">캠페인별 세부 성과 및 예산 가이드</h2>
+          <!-- All / Meta / Google 채널 버튼 추가 -->
           <div class="inline-flex bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs shadow-sm">
             <button onclick="setTableChannelTab('ALL')" id="tTabAll" class="px-3 py-1 rounded-md font-bold bg-white text-slate-900 shadow-sm transition-all">전체</button>
             <button onclick="setTableChannelTab('메타')" id="tTabMeta" class="px-3 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900 transition-all">Meta</button>
@@ -322,6 +331,7 @@
   </div>
 
   <script>
+    // --- 인증 및 보안 로직 ---
     document.addEventListener("DOMContentLoaded", () => {
       if(sessionStorage.getItem('ybh_auth_granted') === 'true') {
         unlockDashboard();
@@ -329,7 +339,7 @@
     });
 
     function checkAuth() {
-      const val = document.getElementById('pwInput').value.trim();
+      const val = document.getElementById('pwInput').value;
       if (val === '1119') {
         sessionStorage.setItem('ybh_auth_granted', 'true');
         unlockDashboard();
@@ -351,6 +361,7 @@
       }, 500);
     }
 
+    // --- 글로벌 변수 ---
     const SPREADSHEET_ID = "1pTLAXzXDoxAg_Vhkt8yFxXQ7wF7bT2Q_9t8BdScEnIc";
     const EXCHANGE_RATE = 1547;
 
@@ -361,7 +372,7 @@
     let trendChartInstance = null;
     let topChartInstance = null;
     let simHistoricalData = { salesToPurCPA: 0, salesToRegCPA: 0, purToRegCPA: 0, purToPurCPA: 0 };
-    let tableChannelTab = 'ALL';
+    let tableChannelTab = 'ALL'; // 테이블 전용 채널 탭 상태 (ALL, 메타, 구글)
 
     const BASE_DATA = [
       ["2026-09-06","매입_전환이벤트 2505_영상","메타",462182,18,0,0,33728,355,"매입"],
@@ -370,6 +381,7 @@
       ["2026-09-06","판매_전환어드벤티지 아이폰소재","메타",135595,1,7,6558522,12462,158,"판매"]
     ];
 
+    // --- 명언 롤링 로직 ---
     const growthQuotes = [
       "완벽한 타이밍 기다리다가 영원히 제자리일 것이다", "그냥 해라, 반은 간다 밤을 새워서라도 해내라",
       "성과는 잔고와 비례한다", "롤모델을 묻는다면 이동민이라 답한다",
@@ -388,6 +400,7 @@
       }, 4500);
     });
 
+    // --- 모달 제어 ---
     function openLogicModal() { document.getElementById('logicModal').classList.add('active'); }
     function closeLogicModal() { document.getElementById('logicModal').classList.remove('active'); }
     function openSimLogicModal() { document.getElementById('simLogicModal').classList.add('active'); }
@@ -398,6 +411,7 @@
     }
     function closeExpectedPerformanceModal() { document.getElementById('expectedModal').classList.remove('active'); }
 
+    // --- 유틸 함수 ---
     function getIsoWeek(date) {
       const tempDate = new Date(date.valueOf());
       const dayn = (date.getDay() + 6) % 7; tempDate.setDate(tempDate.getDate() - dayn + 3);
@@ -454,14 +468,16 @@
       return Number(document.getElementById('simTotalBudget'].value.replace(/,/g, '')) || 0;
     }
 
+    // --- 뷰 모드 전환 (주차별 / 일자별 / 사용자 지정 캘린더) ---
     function toggleViewMode() {
-      const mode = document.getElementById('timeViewMode'].value;
+      const mode = document.getElementById('timeViewMode').value;
       const periodFilter = document.getElementById('timePeriodFilter');
       const customBox = document.getElementById('customDateRangeBox');
 
       if (mode === 'CUSTOM') {
         periodFilter.classList.add('hidden');
         customBox.classList.remove('hidden');
+        // 기본값 설정 (최근 7일)
         if (!document.getElementById('customStartDate').value && rawDailyData.length > 0) {
           const dates = [...new Set(rawDailyData.map(d => d.date))].sort();
           document.getElementById('customEndDate').value = dates[dates.length - 1];
@@ -475,6 +491,7 @@
       renderDashboard();
     }
 
+    // --- 파서 로직 ---
     function processDualColumnSheet(rows) {
       const parsed = [];
       if (!rows || rows.length < 2) return;
@@ -572,6 +589,7 @@
       renderDashboard();
     }
 
+    // --- 멀티 시트 동시 호출 ---
     function fetchAllData() {
       updateStatusBadge("구글 시트 연동 중...", false);
       
@@ -628,6 +646,7 @@
       renderDashboard();
     }
 
+    // --- 시뮬레이터 연산 ---
     function triggerSimUpdate() {
       const mode = document.getElementById('timeViewMode'].value;
       const selType = document.getElementById('typeFilter'].value;
@@ -777,12 +796,13 @@
       document.getElementById('modalExpTotal').textContent = formatNumber((tReg + tPur) / dCnt) + '건';
     }
 
+    // --- 테이블 채널 필터 탭 조작 ---
     function setTableChannelTab(ch) {
       tableChannelTab = ch;
-      ['ALL', '메타', '구글'].forEach(c => {
-        const btn = document.getElementById(c === 'ALL' ? 'tTabAll' : (c === '메타' ? 'tTabMeta' : 'tTabGoogle'));
+      ['ALL', 'Meta', 'Google'].forEach(c => {
+        const btn = document.getElementById(c === 'ALL' ? 'tTabAll' : (c === 'Meta' ? 'tTabMeta' : 'tTabGoogle'));
         if (btn) {
-          if (c === ch) {
+          if ((c === 'ALL' && ch === 'ALL') || (c === 'Meta' && ch === '메타') || (c === 'Google' && ch === '구글')) {
             btn.className = "px-3 py-1 rounded-md font-bold bg-white text-slate-900 shadow-sm transition-all";
           } else {
             btn.className = "px-3 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900 transition-all";
@@ -812,6 +832,7 @@
       }
       const prev = prevF ? aggregateData(prevF) : null;
 
+      // Raw_total 연동 데이터 계산
       let mallTotalBuy = 0;
       let mallTotalSale = 0;
       const targetDates = [...new Set(rawDailyData.filter(f).map(d => d.date))];
@@ -826,12 +847,7 @@
       const trueAttributionRate = mallTotalConvs > 0 ? (adTotalConvs / mallTotalConvs) * 100 : 0;
       const trueBlendedCPA = mallTotalConvs > 0 ? curr.summary.spend / mallTotalConvs : (adTotalConvs > 0 ? curr.summary.cpa_total : 0);
 
-      let periodLabelStr = '-';
-      if (mode === 'CUSTOM') {
-        periodLabelStr = `${document.getElementById('customStartDate').value} ~ ${document.getElementById('customEndDate').value}`;
-      } else {
-        periodLabelStr = document.getElementById('timePeriodFilter').value || '-';
-      }
+      const periodLabelStr = (mode === 'CUSTOM') ? `${document.getElementById('customStartDate').value} ~ ${document.getElementById('customEndDate').value}` : document.getElementById('timePeriodFilter').value;
 
       renderHeaderBriefing(curr.summary, curr.itemsList, periodLabelStr, trueAttributionRate, trueBlendedCPA, mallTotalConvs);
       renderKpis(curr.summary, prev ? prev.summary : null, curr.itemsList, trueBlendedCPA, mallTotalBuy, mallTotalSale, mallTotalConvs);
@@ -841,6 +857,7 @@
       renderTrendChart(mode, selType, selCh); 
       renderTopChart(curr.itemsList);
       
+      // 테이블 필터 적용 (All/Meta/Google 탭 분기)
       let tableList = curr.itemsList;
       if (tableChannelTab !== 'ALL') {
         tableList = tableList.filter(item => item.channel === tableChannelTab);
@@ -893,15 +910,16 @@
 
     function renderTrendChart(mode, tFilt, cFilt) {
       if (typeof Chart === 'undefined') return;
-      const map = {}; 
+      const map = {}; const kField = mode === 'WEEK' ? 'week_id' : 'date';
       rawDailyData.forEach(d => {
         if ((tFilt === 'ALL' || d.type === tFilt) && (cFilt === 'ALL' || d.channel === cFilt)) {
+          let keyVal = (mode === 'WEEK') ? d.week_id : d.date;
           if (mode === 'CUSTOM') {
             const start = document.getElementById('customStartDate').value;
             const end = document.getElementById('customEndDate').value;
             if (start && end && (d.date < start || d.date > end)) return;
+            keyVal = d.date;
           }
-          let keyVal = (mode === 'WEEK') ? d.week_id : d.date;
           if (!map[keyVal]) map[keyVal] = { spend: 0, conv: 0, label: mode === 'WEEK' ? `${d.week_no}주차` : d.date.substring(5) };
           map[keyVal].spend += d.spend; map[keyVal].conv += (d.reg + d.pur);
         }
