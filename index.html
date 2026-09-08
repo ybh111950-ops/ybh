@@ -84,7 +84,6 @@
       
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
         <div class="flex items-center gap-2.5 w-full sm:w-auto overflow-hidden">
-          <span class="bg-indigo-600 text-white text-[10px] sm:text-[11px] px-2 py-0.5 rounded font-bold whitespace-nowrap">💡윤병호 명언</span>
           <div class="quote-ticker text-xs sm:text-sm font-medium text-slate-200 truncate" id="quoteTickerContainer">로딩 중...</div>
         </div>
         <button onclick="openExpectedPerformanceModal()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white text-xs font-bold py-2 px-3.5 rounded-lg shadow flex items-center gap-1.5 whitespace-nowrap w-full sm:w-auto justify-center">
@@ -94,7 +93,7 @@
 
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 pb-1 pt-1">
         <div class="flex items-center gap-2">
-          <span class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[10px] sm:text-xs px-2 py-0.5 rounded font-bold shadow-sm">🔮 시뮬레이터</span>
+          <span class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[10px] sm:text-xs px-2 py-0.5 rounded font-bold shadow-sm">🔮시뮬레이터</span>
           <h3 class="text-sm sm:text-base font-bold text-slate-100">예산 분배 및 예상 성과</h3>
         </div>
         <div class="flex items-center justify-between sm:justify-end gap-2.5">
@@ -154,8 +153,8 @@
       </div>
     </div>
 
-    <!-- 2. 컨트롤러 영역 -->
-    <div class="bg-white p-3.5 sm:p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
+    <!-- 2. 통합 대시보드 & 지표 인사이트 병합 섹션 -->
+    <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 border-b border-slate-100 pb-3">
         <div class="flex items-center gap-2.5">
           <h1 class="text-base sm:text-lg font-bold text-slate-900">통합 대시보드</h1>
@@ -169,7 +168,7 @@
         </button>
       </div>
 
-      <div class="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2">
+      <div class="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 pt-1">
         <div class="flex items-center gap-2 w-full sm:w-auto">
           <select id="channelFilter" class="bg-white border border-slate-300 text-xs font-medium rounded-lg px-2.5 py-2 w-1/2 sm:w-auto" onchange="renderDashboard()">
             <option value="ALL">전체 매체</option><option value="메타">Meta</option><option value="구글">Google</option>
@@ -192,32 +191,32 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 인사이트 브리핑 박스 -->
-    <div class="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-200 space-y-2.5">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-2">
-        <div class="flex items-center gap-2">
-          <span class="bg-indigo-50 text-indigo-700 text-xs px-2 py-0.5 rounded font-bold border border-indigo-200">인사이트</span>
-          <h3 class="text-sm sm:text-base font-bold text-slate-800">지표 요약 및 예산 가이드</h3>
+      <!-- 지표 인사이트 하위 통합 영역 -->
+      <div class="pt-2 border-t border-slate-100 space-y-2.5">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="bg-indigo-50 text-indigo-700 text-xs px-2 py-0.5 rounded font-bold border border-indigo-200">Summary</span>
+            <h3 class="text-sm sm:text-base font-bold text-slate-800"></h3>
+          </div>
+          <div class="flex items-center justify-between sm:justify-end gap-3">
+            <span id="footerPeriodLabel" class="text-xs text-slate-400">조회 구간: -</span>
+            <button onclick="openLogicModal()" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-1.5 px-3 rounded-lg border border-slate-200 shadow-sm">📊 산출 근거 확인</button>
+          </div>
         </div>
-        <div class="flex items-center justify-between sm:justify-end gap-3">
-          <span id="footerPeriodLabel" class="text-xs text-slate-400">조회 구간: -</span>
-          <button onclick="openLogicModal()" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-1.5 px-3 rounded-lg border border-slate-200 shadow-sm">📊 산출 근거 확인</button>
-        </div>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs sm:text-sm">
-        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
-          <span class="text-indigo-600 font-semibold block mb-1">💡 요약</span>
-          <p id="footerSummaryText" class="text-slate-600 text-[11px] sm:text-xs font-medium">데이터 로딩 중...</p>
-        </div>
-        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
-          <span class="text-emerald-600 font-semibold block mb-1">👍 증액(고효율 소재)</span>
-          <p id="footerScaleUpText" class="text-slate-600 text-[11px] sm:text-xs font-medium">-</p>
-        </div>
-        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
-          <span class="text-rose-600 font-semibold block mb-1">🚨 교체시급 (저효율 소재)</span>
-          <p id="footerScaleDownText" class="text-slate-600 text-[11px] sm:text-xs font-medium">-</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs sm:text-sm">
+          <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+            <span class="text-indigo-600 font-semibold block mb-1">💡 요약</span>
+            <p id="footerSummaryText" class="text-slate-600 text-[11px] sm:text-xs font-medium">데이터 로딩 중...</p>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+            <span class="text-emerald-600 font-semibold block mb-1">👍 증액(고효율 소재)</span>
+            <p id="footerScaleUpText" class="text-slate-600 text-[11px] sm:text-xs font-medium">-</p>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+            <span class="text-rose-600 font-semibold block mb-1">🚨 검토 (저효율 소재)</span>
+            <p id="footerScaleDownText" class="text-slate-600 text-[11px] sm:text-xs font-medium">-</p>
+          </div>
         </div>
       </div>
     </div>
@@ -345,7 +344,7 @@
   <div id="expectedModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center modal-overlay p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 modal-content relative">
       <div class="flex items-center justify-between border-b pb-3">
-        <h3 class="text-base font-bold text-slate-900">🎯 다음주 예상 성과</h3>
+        <h3 class="text-base font-bold text-slate-900">🎯 오늘 예상 성과</h3>
         <button onclick="closeExpectedPerformanceModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl leading-none">&times;</button>
       </div>
       <div class="space-y-3 text-xs sm:text-sm text-slate-600 font-medium">
@@ -652,7 +651,6 @@
             const isSale = gName.includes('판매') || gName.includes('구입');
             const type = isBuy ? '매입' : (isSale ? '판매' : '혼합');
 
-            // 구글 행은 메타와 무관하게 자체 urls가 없으면 빈 배열 유지 (타 채널 오염 원천 차단)
             parsed.push({ date: gDate, name: gName, channel: '구글', spend: spendKrw, reg: reg, pur: pur, rev: 0, imp: imp, clicks: clicks, type: type, urls: [] });
           }
         }
@@ -1016,8 +1014,8 @@
       const map = {}; 
       rawDailyData.forEach(d => {
         if ((tFilt === 'ALL' || d.type === tFilt) && (cFilt === 'ALL' || d.channel === cFilt)) {
-          const start = document.getElementById('customStartDate');
-          const end = document.getElementById('customEndDate');
+          const start = document.getElementById('customStartDate').value;
+          const end = document.getElementById('customEndDate').value;
           if (start && end && (d.date < start || d.date > end)) return;
 
           let keyVal = d.date;
