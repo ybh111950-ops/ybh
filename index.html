@@ -69,7 +69,7 @@
       </button>
     </div>
 
-    <!-- 컨트롤러 영역 (시트 연동 버튼 교체) -->
+    <!-- 컨트롤러 영역 -->
     <div class="bg-white p-4 sm:px-5 sm:py-3.5 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
       <div class="flex flex-wrap items-center gap-2 sm:gap-3">
         <h1 class="text-base sm:text-lg font-bold text-slate-900">통합 대시보드</h1>
@@ -209,12 +209,10 @@
   <script>
     /* ============================================================
        구글 스프레드시트 연동 URL 설정
-       (시트에서 '웹에 게시' > 'CSV' 형식으로 추출한 URL을 입력)
        ============================================================ */
     const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQY_lZWa4w9WJ2dWvpofp6a4Vk1qhDF-y_KNArVqy-ExKQ6SSibMV-y-BwhHX0mMbPDgjFrSD86tigi/pubhtml?gid=1811588047&single=true";
     const EXCHANGE_RATE = 1547;
 
-    // 모바일 초기화 방지용 기본 데이터 (Fallback)
     const BASE_DATA = [
       ["2026-09-06","매입_전환이벤트 2505_영상","메타",462182,18,0,0,33728,355,"매입"],
       ["2026-09-06","260331_중고폰매입_PMax","구글",343178,5,0,0,27817,221,"매입"],
@@ -223,11 +221,8 @@
       ["2026-09-05","매입_전환이벤트 2505_영상","메타",450000,15,0,0,32000,340,"매입"],
       ["2026-09-05","260331_중고폰매입_PMax","구글",320000,5,0,0,25000,200,"매입"],
       ["2026-09-05","판매_전환어드벤티지 아이폰소재","메타",140000,0,6,5558522,13000,165,"판매"]
-    ];    
+    ];
 
-    /* =========================================
-       명언 롤링 로직
-       ========================================= */
     const growthQuotes = [
       "완벽한 타이밍 기다리다가 영원히 제자리일 것이다", "그냥 해라, 반은 간다 밤을 새워서라도 해내라",
       "성과는 잔고와 비례한다", "롤모델을 묻는다면 이동민이라 답한다",
@@ -243,9 +238,6 @@
       }, 4500);
     });
 
-    /* =========================================
-       모달 열기/닫기 제어 함수
-       ========================================= */
     function openLogicModal() { document.getElementById('logicModal').classList.add('active'); }
     function closeLogicModal() { document.getElementById('logicModal').classList.remove('active'); }
     function openExpectedPerformanceModal() { 
@@ -254,18 +246,12 @@
     }
     function closeExpectedPerformanceModal() { document.getElementById('expectedModal').classList.remove('active'); }
 
-    /* =========================================
-       대시보드 글로벌 변수
-       ========================================= */
     let rawDailyData = [];
     let sortCol = 'spend';
     let sortDesc = true;
     let trendChartInstance = null;
     let topChartInstance = null;
 
-    /* =========================================
-       유틸리티 함수
-       ========================================= */
     function getIsoWeek(date) {
       const tempDate = new Date(date.valueOf());
       const dayn = (date.getDay() + 6) % 7; tempDate.setDate(tempDate.getDate() - dayn + 3);
@@ -310,34 +296,76 @@
       return `<span class="text-[10px] sm:text-xs ${colorClass} block">${isUp ? '▲' : '▼'} ${Math.abs(pct).toFixed(1)}%</span>`;
     }
 
-    /* =========================================
-       구글 시트 연동 및 데이터 처리 로직
-       ========================================= */
+    /* ============================================================
+       CSV 원본 헤더(메타/구글) 호환 파싱 함수 (크로스체크 반영)
+       ============================================================ */
     function processSheetRows(rows) {
-      rawDailyData = rows.map(r => {
-        const dateStr = normalizeDate(r['일'] || r['날짜'] || r['Date'] || '');
-        if (!dateStr) return null;
+      const parsed = [];
+      rows.forEach(r => {
+        let dateStr = normalizeDate(r['일'] || r['날짜'] || r['Date'] || '');
+        if (!dateStr) return;
 
-        const rawName = r['광고 세트 이름'] || r['캠페인명'] || r['캠페인'] || '';
-        const channel = r['매체'] || r['채널'] || (rawName.includes('구글') ? '구글' : '메타');
-        
-        let spend = parseFloat(String(r['비용'] || r['지출 금액 (USD)'] || r['지출'] || '0').replace(/,/g, '')) || 0;
-        if (r['지출 금액 (USD)']) spend = Math.round(spend * EXCHANGE_RATE); // 메타 외화 대응
+        // 원본 메타/구글 CSV 헤더 판별
+        const isMeta = r['지출 금액 (USD)'] !== undefined || r['광고 세트 이름'] !== undefined;
+        const isGoogle = r['결과'] !== undefined || r['캠페인'] !== undefined || (r['매체'] === '구글');
+        let rawName = r['광고 세트 이름'] || r['캠페인'] || r['캠페인명'] || '';
+        if (!rawName) return;
 
-        const reg = parseFloat(r['등록 완료'] || r['매입'] || r['예약'] || '0') || 0;
-        const pur = parseFloat(r['구매'] || r['판매'] || '0') || 0;
-        const rev = parseInt(String(r['구매 전환값'] || r['전환값'] || '0').replace(/,/g, '')) || 0;
-        const imp = parseInt(String(r['노출'] || r['노출수'] || '0').replace(/,/g, '')) || 0;
-        const clicks = parseInt(String(r['클릭'] || r['클릭수'] || '0').replace(/,/g, '')) || 0;
-        const type = r['구분'] || (rawName.includes('매입') ? '매입' : (rawName.includes('판매') ? '판매' : '혼합'));
+        let channel = r['매체'] || (isMeta ? '메타' : (isGoogle ? '구글' : '기타'));
+        let spendKrw = 0, reg = 0, pur = 0, revKrw = 0, imp = 0, clicks = 0;
+
+        if (isMeta || channel === '메타') {
+          channel = '메타';
+          if (r['지출 금액 (USD)']) {
+            spendKrw = Math.round((parseFloat(String(r['지출 금액 (USD)']).replace(/,/g, '')) || 0) * EXCHANGE_RATE);
+          } else {
+            spendKrw = parseInt(String(r['비용'] || r['지출'] || '0').replace(/,/g, '')) || 0;
+          }
+          reg = parseFloat(r['등록 완료'] || r['예약'] || '0') || 0;
+          pur = parseFloat(r['구매'] || '0') || 0;
+          if (r['구매 전환값']) {
+            revKrw = Math.round((parseFloat(String(r['구매 전환값']).replace(/,/g, '')) || 0) * EXCHANGE_RATE);
+          } else {
+            revKrw = parseInt(String(r['전환값'] || '0').replace(/,/g, '')) || 0;
+          }
+          imp = parseInt(String(r['노출'] || r['노출수'] || '0').replace(/,/g, '')) || 0;
+          clicks = parseInt(String(r['링크 클릭'] || r['클릭수'] || r['클릭'] || '0').replace(/,/g, '')) || 0;
+        } else if (isGoogle || channel === '구글') {
+          channel = '구글';
+          spendKrw = parseInt(String(r['비용'] || r['지출'] || '0').replace(/,/g, '')) || 0;
+          imp = parseInt(String(r['노출수'] || r['노출'] || '0').replace(/,/g, '')) || 0;
+          clicks = parseInt(String(r['클릭수'] || r['클릭'] || '0').replace(/,/g, '')) || 0;
+          
+          let resultStr = String(r['결과'] || '');
+          let resMap = {'예약': 0, '구매하기': 0}; 
+          if (resultStr && resultStr !== '0' && resultStr !== '-') {
+            resultStr.split(';').forEach(p => {
+              let m = p.match(/([^:]+):\s*([0-9.]+)/);
+              if (m && resMap[m[1].trim()] !== undefined) resMap[m[1].trim()] = parseFloat(m[2]);
+            });
+          }
+          reg = resMap['예약'] || parseFloat(r['등록 완료'] || r['예약'] || '0') || 0;
+          pur = resMap['구매하기'] || parseFloat(r['구매'] || '0') || 0;
+        } else {
+          spendKrw = parseInt(String(r['비용'] || '0').replace(/,/g, '')) || 0;
+          reg = parseFloat(r['등록 완료'] || r['예약'] || '0') || 0;
+          pur = parseFloat(r['구매'] || '0') || 0;
+          imp = parseInt(String(r['노출'] || '0').replace(/,/g, '')) || 0;
+          clicks = parseInt(String(r['클릭'] || '0').replace(/,/g, '')) || 0;
+        }
+
+        let isBuy = rawName.includes('매입');
+        let isSale = rawName.includes('판매') || rawName.includes('구입');
+        let type = r['구분'] || (isBuy ? '매입' : (isSale ? '판매' : '혼합'));
 
         const wInfo = calculateWeekRange(dateStr);
-        return {
+        parsed.push({
           date: dateStr, week_id: wInfo.id, week_label: wInfo.label, week_no: wInfo.weekNo,
-          name: rawName, channel: channel, spend: spend, reg: reg, pur: pur, rev: rev, imp: imp, clicks: clicks, type: type
-        };
-      }).filter(Boolean);
+          name: rawName, channel: channel, spend: spendKrw, reg: reg, pur: pur, rev: revKrw, imp: imp, clicks: clicks, type: type
+        });
+      });
 
+      rawDailyData = parsed;
       updatePeriodFilterOptions();
       renderDashboard();
     }
@@ -351,14 +379,14 @@
       try {
         updateStatusBadge("구글 시트 연동 중...", false);
         const res = await fetch(GOOGLE_SHEET_CSV_URL);
-        if (!res.ok) throw new Error("서버 응답 오류");
+        if (!res.ok) throw new Error("네트워크 오류");
         const text = await res.text();
         Papa.parse(text, {
           header: true,
           skipEmptyLines: true,
           complete: (results) => {
             processSheetRows(results.data);
-            updateStatusBadge("✓ 실시간 시트 동기화 완료", true);
+            updateStatusBadge(`✓ 실시간 시트 동기화 완료 (${rawDailyData.length}행)`, true);
           }
         });
       } catch (err) {
@@ -414,9 +442,6 @@
       };
     }
 
-    /* =========================================
-       UI 업데이트 및 렌더링 로직
-       ========================================= */
     function updatePeriodFilterOptions() {
       const mode = document.getElementById('timeViewMode').value;
       const periodFilter = document.getElementById('timePeriodFilter');
@@ -632,14 +657,7 @@
       document.getElementById(id).addEventListener('change', () => { if(id !== 'timePeriodFilter') updatePeriodFilterOptions(); renderDashboard(); });
     });
 
-    /* =========================================
-       초기 실행 (Boot)
-       ========================================= */
-    async function boot() {
-      await fetchGoogleSheetData();
-    }
-    
-    boot();
+    fetchGoogleSheetData();
   </script>
 </body>
 </html>
