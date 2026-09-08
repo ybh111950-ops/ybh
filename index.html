@@ -65,8 +65,8 @@
     <div class="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center space-y-6">
       <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto text-3xl shadow-inner">🔒</div>
       <div>
-        <h2 class="text-xl font-bold text-slate-900">개쩌는 대시보드</h2>
-        <p class="text-xs text-slate-500 mt-1">정예 인력만 접근할 수 있습니다.</p>
+        <h2 class="text-xl font-bold text-slate-900">광고분석 대시보드</h2>
+        <p class="text-xs text-slate-500 mt-1">담당자만 접근할 수 있습니다.</p>
       </div>
       <div>
         <input type="password" id="pwInput" placeholder="비밀번호 입력" class="w-full border border-slate-300 rounded-xl px-4 py-3.5 text-center text-xl tracking-widest font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow" onkeypress="if(event.key==='Enter') checkAuth()">
@@ -78,18 +78,83 @@
 
   <div class="max-w-7xl mx-auto space-y-4 sm:space-y-6 p-3 sm:p-6 opacity-0 transition-opacity duration-700" id="dashboardContent">
     
-    <!-- 최상단 명언 롤링 & 모달 버튼 -->
-    <div class="bg-slate-900 text-slate-100 p-3.5 sm:p-5 rounded-xl shadow-md flex flex-col sm:flex-row items-center justify-between gap-3">
-      <div class="flex items-center gap-2.5 w-full sm:w-auto overflow-hidden">
-        <span class="bg-indigo-600 text-white text-[10px] sm:text-[11px] px-2 py-0.5 rounded font-bold whitespace-nowrap">💡윤병호 명언</span>
-        <div class="quote-ticker text-xs sm:text-sm font-medium text-slate-200 truncate" id="quoteTickerContainer">로딩 중...</div>
+    <!-- 1. 최상단: 명언 + 시뮬레이터 통합 보드 (다크 테마) -->
+    <div class="bg-slate-900 p-4 sm:p-5 rounded-xl shadow-md space-y-4 relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-bl-full -z-10 opacity-50 pointer-events-none"></div>
+      
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+        <div class="flex items-center gap-2.5 w-full sm:w-auto overflow-hidden">
+          <span class="bg-indigo-600 text-white text-[10px] sm:text-[11px] px-2 py-0.5 rounded font-bold whitespace-nowrap">💡윤병호 명언</span>
+          <div class="quote-ticker text-xs sm:text-sm font-medium text-slate-200 truncate" id="quoteTickerContainer">로딩 중...</div>
+        </div>
+        <button onclick="openExpectedPerformanceModal()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white text-xs font-bold py-2 px-3.5 rounded-lg shadow flex items-center gap-1.5 whitespace-nowrap w-full sm:w-auto justify-center">
+          <span>🎯 오늘 성과가 궁금해요?</span>
+        </button>
       </div>
-      <button onclick="openExpectedPerformanceModal()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white text-xs font-bold py-2 px-3.5 rounded-lg shadow flex items-center gap-1.5 whitespace-nowrap w-full sm:w-auto justify-center">
-        <span>🎯 오늘 성과가 궁금해요?</span>
-      </button>
+
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 pb-1 pt-1">
+        <div class="flex items-center gap-2">
+          <span class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[10px] sm:text-xs px-2 py-0.5 rounded font-bold shadow-sm">🔮 시뮬레이터</span>
+          <h3 class="text-sm sm:text-base font-bold text-slate-100">예산 분배 및 예상 성과</h3>
+        </div>
+        <div class="flex items-center justify-between sm:justify-end gap-2.5">
+          <select id="simChannelFilter" class="bg-slate-800 border border-slate-700 text-[11px] font-bold rounded-md px-2 py-1 text-slate-300 shadow-sm outline-none focus:ring-1 focus:ring-indigo-500" onchange="triggerSimUpdate()">
+            <option value="ALL">통합 매체 기준</option>
+            <option value="메타">Meta 알고리즘 한정</option>
+            <option value="구글">Google 알고리즘 한정</option>
+          </select>
+          <button onclick="openSimLogicModal()" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-1.5 px-3 rounded-lg border border-slate-700 shadow-sm flex items-center gap-1">📊 산출 근거 확인</button>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <!-- Input Area -->
+        <div class="col-span-1 space-y-3 bg-slate-800/50 p-3.5 sm:p-4 rounded-xl border border-slate-700/50 shadow-inner">
+          <div>
+            <label class="text-xs font-bold text-slate-300 block mb-1.5">총 시뮬레이션 예산 (원)</label>
+            <input type="text" id="simTotalBudget" value="10,000,000" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm font-bold text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow" oninput="formatSimBudget(this)">
+            <div id="simPenaltyWarning" class="text-[10px] text-rose-400 font-bold hidden mt-1.5">🚨 예산 과투입 한계효용(CPA +<span id="simPenaltyPct"></span>%) 점진 페널티 적용됨</div>
+          </div>
+          <div class="pt-1">
+            <div class="flex justify-between text-xs font-bold text-slate-400 mb-2">
+              <span class="text-blue-400 bg-blue-900/30 px-2 py-0.5 rounded border border-blue-800/50">판매 예산 <span id="simSalesPct" class="text-blue-300">50%</span></span>
+              <span class="text-purple-400 bg-purple-900/30 px-2 py-0.5 rounded border border-purple-800/50">매입 예산 <span id="simPurPct" class="text-purple-300">50%</span></span>
+            </div>
+            <input type="range" id="simRatioSlider" min="0" max="100" value="50" class="w-full h-2.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg appearance-none cursor-pointer outline-none shadow-sm" oninput="updateSimulation()">
+            <div class="flex justify-between text-[11px] font-bold text-slate-500 mt-2">
+              <span id="simSalesBudgetTxt">5,000,000원</span>
+              <span id="simPurBudgetTxt">5,000,000원</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Output Area -->
+        <div class="col-span-1 lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+          <div class="bg-slate-800/80 p-3 rounded-xl border border-blue-900/50 shadow-sm flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute -right-2 -bottom-2 text-blue-500 opacity-10 text-4xl sm:text-5xl font-black">S</div>
+            <span class="text-[10px] sm:text-[11px] font-bold text-blue-400 block mb-1 relative">예상 판매(구매) 전환</span>
+            <div class="text-base sm:text-xl font-extrabold text-slate-100 relative" id="simExpPur">0건</div>
+            <div class="text-[9px] sm:text-[10px] text-slate-400 mt-1 leading-tight relative" id="simDetailSales">-</div>
+          </div>
+          <div class="bg-slate-800/80 p-3 rounded-xl border border-purple-900/50 shadow-sm flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute -right-2 -bottom-2 text-purple-500 opacity-10 text-4xl sm:text-5xl font-black">R</div>
+            <span class="text-[10px] sm:text-[11px] font-bold text-purple-400 block mb-1 relative">예상 매입(예약) 전환</span>
+            <div class="text-base sm:text-xl font-extrabold text-slate-100 relative" id="simExpReg">0건</div>
+            <div class="text-[9px] sm:text-[10px] text-slate-400 mt-1 leading-tight relative" id="simDetailPur">-</div>
+          </div>
+          <div class="bg-emerald-900/20 p-3 rounded-xl border border-emerald-800/50 shadow-sm flex flex-col justify-center">
+            <span class="text-[10px] sm:text-[11px] font-bold text-emerald-400 block mb-1">합산 전환 합계</span>
+            <div class="text-lg sm:text-2xl font-black text-emerald-400" id="simExpTotal">0건</div>
+          </div>
+          <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 shadow-sm flex flex-col justify-center">
+            <span class="text-[10px] sm:text-[11px] font-bold text-slate-400 block mb-1">평균 합산 CPA</span>
+            <div class="text-sm sm:text-lg font-bold text-white truncate" id="simExpCpa">-</div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- 컨트롤러 영역 -->
+    <!-- 2. 컨트롤러 영역 -->
     <div class="bg-white p-3.5 sm:p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 border-b border-slate-100 pb-3">
         <div class="flex items-center gap-2.5">
@@ -104,17 +169,27 @@
         </button>
       </div>
 
-      <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
-        <select id="channelFilter" class="bg-white border border-slate-300 text-xs font-medium rounded-lg px-2.5 py-2 w-full sm:w-auto" onchange="renderDashboard()">
-          <option value="ALL">전체 매체</option><option value="메타">Meta</option><option value="구글">Google</option>
-        </select>
-        <select id="typeFilter" class="bg-white border border-slate-300 text-xs font-medium rounded-lg px-2.5 py-2 w-full sm:w-auto" onchange="renderDashboard()">
-          <option value="ALL">전체 BM</option><option value="판매">판매(구매)</option><option value="매입">매입(예약)</option>
-        </select>
-        <div class="col-span-2 sm:col-span-auto flex items-center justify-between sm:justify-start gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs w-full sm:w-auto">
-          <input type="date" id="customStartDate" class="bg-white border border-slate-300 rounded px-2 py-1 text-xs font-medium outline-none focus:ring-1 focus:ring-indigo-500 w-[46%] sm:w-auto" onchange="renderDashboard()">
-          <span class="text-slate-400 font-bold">~</span>
-          <input type="date" id="customEndDate" class="bg-white border border-slate-300 rounded px-2 py-1 text-xs font-medium outline-none focus:ring-1 focus:ring-indigo-500 w-[46%] sm:w-auto" onchange="renderDashboard()">
+      <div class="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2">
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <select id="channelFilter" class="bg-white border border-slate-300 text-xs font-medium rounded-lg px-2.5 py-2 w-1/2 sm:w-auto" onchange="renderDashboard()">
+            <option value="ALL">전체 매체</option><option value="메타">Meta</option><option value="구글">Google</option>
+          </select>
+          <select id="typeFilter" class="bg-white border border-slate-300 text-xs font-medium rounded-lg px-2.5 py-2 w-1/2 sm:w-auto" onchange="renderDashboard()">
+            <option value="ALL">전체 BM</option><option value="판매">판매(구매)</option><option value="매입">매입(예약)</option>
+          </select>
+        </div>
+        
+        <div class="flex flex-wrap sm:flex-nowrap items-center gap-1.5 w-full sm:w-auto">
+          <div class="flex items-center gap-1">
+            <button id="btn-yesterday" onclick="setQuickDate('yesterday')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold py-1.5 px-2.5 rounded-lg transition-colors border border-slate-200">어제</button>
+            <button id="btn-lastWeek" onclick="setQuickDate('lastWeek')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold py-1.5 px-2.5 rounded-lg transition-colors border border-slate-200">저번주</button>
+            <button id="btn-lastMonth" onclick="setQuickDate('lastMonth')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold py-1.5 px-2.5 rounded-lg transition-colors border border-slate-200">저번달</button>
+          </div>
+          <div class="flex items-center justify-between sm:justify-start gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs w-full sm:w-auto mt-1.5 sm:mt-0">
+            <input type="date" id="customStartDate" class="bg-white border border-slate-300 rounded px-2 py-1 text-xs font-medium outline-none focus:ring-1 focus:ring-indigo-500 w-[46%] sm:w-auto" onchange="clearQuickDateButtons(); renderDashboard();">
+            <span class="text-slate-400 font-bold">~</span>
+            <input type="date" id="customEndDate" class="bg-white border border-slate-300 rounded px-2 py-1 text-xs font-medium outline-none focus:ring-1 focus:ring-indigo-500 w-[46%] sm:w-auto" onchange="clearQuickDateButtons(); renderDashboard();">
+          </div>
         </div>
       </div>
     </div>
@@ -150,68 +225,6 @@
     <!-- KPI 요약 카드 -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4" id="kpiContainer"></div>
 
-    <!-- 🔮 예산 시뮬레이터 -->
-    <div class="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-200 space-y-4 relative overflow-hidden">
-      <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-bl-full -z-10 opacity-50"></div>
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 border-b border-slate-100 pb-2">
-        <div class="flex items-center gap-2">
-          <span class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[10px] sm:text-xs px-2 py-0.5 rounded font-bold shadow-sm">🔮 시뮬레이터</span>
-          <h3 class="text-sm sm:text-base font-bold text-slate-800">예산 분배 및 예상 성과</h3>
-        </div>
-        <div class="flex items-center justify-between sm:justify-end gap-2.5">
-          <select id="simChannelFilter" class="bg-slate-50 border border-slate-200 text-[11px] font-bold rounded-md px-2 py-1 text-slate-700 shadow-sm" onchange="triggerSimUpdate()">
-            <option value="ALL">통합 매체 기준</option>
-            <option value="메타">Meta 알고리즘 한정</option>
-            <option value="구글">Google 알고리즘 한정</option>
-          </select>
-          <button onclick="openSimLogicModal()" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-1.5 px-3 rounded-lg border border-slate-200 shadow-sm flex items-center gap-1">📊 산출 근거 확인</button>
-        </div>
-      </div>
-      
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div class="col-span-1 space-y-3 bg-slate-50/80 p-3.5 sm:p-4 rounded-xl border border-slate-200 shadow-inner">
-          <div>
-            <label class="text-xs font-bold text-slate-700 block mb-1.5">총 시뮬레이션 예산 (원)</label>
-            <input type="text" id="simTotalBudget" value="10,000,000" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow" oninput="formatSimBudget(this)">
-          </div>
-          <div class="pt-1">
-            <div class="flex justify-between text-xs font-bold text-slate-700 mb-2">
-              <span class="text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">판매 예산 <span id="simSalesPct">50%</span></span>
-              <span class="text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">매입 예산 <span id="simPurPct">50%</span></span>
-            </div>
-            <input type="range" id="simRatioSlider" min="0" max="100" value="50" class="w-full h-2.5 bg-gradient-to-r from-blue-400 to-purple-400 rounded-lg appearance-none cursor-pointer outline-none shadow-sm" oninput="updateSimulation()">
-            <div class="flex justify-between text-[11px] font-bold text-slate-600 mt-2">
-              <span id="simSalesBudgetTxt">5,000,000원</span>
-              <span id="simPurBudgetTxt">5,000,000원</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-span-1 lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
-          <div class="bg-white p-3 rounded-xl border border-blue-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
-            <div class="absolute -right-2 -bottom-2 text-blue-50 opacity-50 text-4xl sm:text-5xl font-black">S</div>
-            <span class="text-[10px] sm:text-[11px] font-bold text-blue-600 block mb-1 relative">예상 판매(구매) 전환</span>
-            <div class="text-base sm:text-xl font-extrabold text-slate-900 relative" id="simExpPur">0건</div>
-            <div class="text-[9px] sm:text-[10px] text-slate-500 mt-1 leading-tight relative" id="simDetailSales">-</div>
-          </div>
-          <div class="bg-white p-3 rounded-xl border border-purple-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
-            <div class="absolute -right-2 -bottom-2 text-purple-50 opacity-50 text-4xl sm:text-5xl font-black">R</div>
-            <span class="text-[10px] sm:text-[11px] font-bold text-purple-600 block mb-1 relative">예상 매입(예약) 전환</span>
-            <div class="text-base sm:text-xl font-extrabold text-slate-900 relative" id="simExpReg">0건</div>
-            <div class="text-[9px] sm:text-[10px] text-slate-500 mt-1 leading-tight relative" id="simDetailPur">-</div>
-          </div>
-          <div class="bg-white p-3 rounded-xl border border-emerald-200 shadow-sm flex flex-col justify-center bg-emerald-50/30">
-            <span class="text-[10px] sm:text-[11px] font-bold text-emerald-700 block mb-1">합산 전환 합계</span>
-            <div class="text-lg sm:text-2xl font-black text-emerald-600" id="simExpTotal">0건</div>
-          </div>
-          <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-center bg-slate-900 text-white">
-            <span class="text-[10px] sm:text-[11px] font-bold text-slate-300 block mb-1">평균 합산 CPA</span>
-            <div class="text-sm sm:text-lg font-bold text-white truncate" id="simExpCpa">-</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- 차트 영역 -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
       <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
@@ -242,10 +255,10 @@
             </div>
           </div>
         </div>
-        <span class="text-[11px] text-slate-400 hidden sm:inline">👍 증액 / ✋ 유지 / 🚨 감액 자동 판정</span>
+        <span class="text-[11px] text-slate-400 hidden sm:inline">👍 증액 / ✋ 유지 / 🚨 감액 자동 판정 (보라색 캠페인명 클릭 시 소재 팝업)</span>
       </div>
       
-      <!-- PC용 테이블 (md 이상에서만 표시) -->
+      <!-- PC용 테이블 -->
       <div class="hidden md:block overflow-x-auto touch-scroll table-scrollbar border border-slate-100 rounded-lg">
         <table class="w-full text-left text-xs sm:text-sm text-slate-600 whitespace-nowrap min-w-[1050px]">
           <thead class="bg-slate-100 text-slate-700 uppercase text-[11px] sm:text-xs">
@@ -266,8 +279,25 @@
         </table>
       </div>
 
-      <!-- 모바일용 카드 리스트 (md 미만에서만 표시) -->
+      <!-- 모바일용 카드 리스트 -->
       <div class="block md:hidden space-y-3" id="mobileCardContainer"></div>
+    </div>
+  </div>
+
+  <!-- 소재 뷰어 모달 (클릭 시 노출) -->
+  <div id="creativeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center modal-overlay p-4" onclick="closeCreativeModal()">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-5 space-y-4 modal-content relative shadow-2xl" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between border-b pb-3">
+        <div>
+          <span id="modalCampaignChannel" class="text-[10px] font-bold px-2 py-0.5 rounded mr-1.5"></span>
+          <h3 id="modalCampaignName" class="text-sm font-bold text-slate-900 inline">캠페인 소재 뷰어</h3>
+        </div>
+        <button onclick="closeCreativeModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl leading-none">&times;</button>
+      </div>
+      <div id="modalCreativeContainer" class="grid grid-cols-1 sm:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto p-1">
+        <!-- 동적 이미지 주입 -->
+      </div>
+      <button onclick="closeCreativeModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-sm transition-colors mt-2">확인</button>
     </div>
   </div>
 
@@ -304,7 +334,7 @@
           <div class="border-t border-slate-200"></div>
           <p><span class="font-bold text-blue-600 block mb-1">2. 채널별 알고리즘 분리</span>메타와 구글 각 매체의 뚜렷한 전환 성향과 효율 격차를 독립적으로 분리하여 시뮬레이션합니다.</p>
           <div class="border-t border-slate-200"></div>
-          <p><span class="font-bold text-emerald-600 block mb-1">3. 평균 합산 CPA 도출</span>투입 예산과 슬라이더 비율에 맞춰 직접 전환과 교차 전환을 합산하여 예상 CPA를 실시간 산출합니다.</p>
+          <p><span class="font-bold text-emerald-600 block mb-1">3. 한계 효용(Diminishing Returns) 적용</span>조회된 기간의 예산 대비 시뮬레이션 예산이 130%를 초과할 경우, 초과분에 비례하여 CPA 효율이 점진적으로 악화(최대 1.5배)되도록 설계된 비선형 페널티가 적용됩니다.</p>
         </div>
       </div>
       <button onclick="closeSimLogicModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-sm transition-colors mt-2">확인</button>
@@ -319,8 +349,8 @@
         <button onclick="closeExpectedPerformanceModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl leading-none">&times;</button>
       </div>
       <div class="space-y-3 text-xs sm:text-sm text-slate-600 font-medium">
-        <p class="text-[11px] text-slate-500">최근 7일 일평균 Run-rate 산출 결과입니다.</p>
-        <div class="bg-slate-50 p-4 rounded-xl border space-y-2.5">
+        <p class="text-[11px] text-slate-500">최근 7일 일평균 런레이트에 <b class="text-slate-700">오늘의 요일별 전환 가중치(DOW Index)</b>를 반영한 통계적 예측 결과입니다.</p>
+        <div class="bg-slate-50 p-4 rounded-xl border space-y-2.5 mt-2">
           <div class="flex justify-between items-center"><span class="font-semibold">예상 집행비용:</span><span id="modalExpSpend" class="font-bold text-slate-900">-</span></div>
           <div class="flex justify-between items-center text-purple-700"><span class="font-semibold">예상 매입(예약):</span><span id="modalExpReg" class="font-bold">-</span></div>
           <div class="flex justify-between items-center text-blue-700"><span class="font-semibold">예상 판매(구매):</span><span id="modalExpPur" class="font-bold">-</span></div>
@@ -333,16 +363,51 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      if(sessionStorage.getItem('ybh_auth_granted') === 'true') {
+      const expiry = localStorage.getItem('ybh_auth_expiry');
+      if(expiry && Date.now() < parseInt(expiry)) {
         unlockDashboard();
       }
     });
 
+    window.openCreativeModal = function(channel, name, urlsStr) {
+      if(!urlsStr) return;
+      const urls = urlsStr.split(',').filter(u => u && u.startsWith('http'));
+      if(urls.length === 0) return;
+
+      const chEl = document.getElementById('modalCampaignChannel');
+      chEl.textContent = channel;
+      chEl.className = channel === '메타' ? 'text-[10px] font-bold px-2 py-0.5 rounded mr-1.5 badge-meta' : 'text-[10px] font-bold px-2 py-0.5 rounded mr-1.5 badge-google';
+      
+      document.getElementById('modalCampaignName').textContent = name;
+      
+      const container = document.getElementById('modalCreativeContainer');
+      container.innerHTML = urls.map((u, idx) => {
+        const idMatch = u.match(/id=([a-zA-Z0-9_-]+)/);
+        const thumbUrl = (u.includes('drive.google.com') && idMatch) ? `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w800` : u;
+        return `
+          <div class="space-y-1 bg-slate-50 p-2 rounded-xl border border-slate-200 text-center">
+            <span class="text-[10px] font-bold text-slate-500 block">소재 시안 #${idx + 1}</span>
+            <a href="${u}" target="_blank" class="block overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm hover:opacity-90 transition-opacity">
+              <img src="${thumbUrl}" class="w-full h-40 object-cover bg-slate-100" onerror="this.src='https://via.placeholder.com/300x400?text=Image+Load+Fail'">
+            </a>
+            <span class="text-[9px] text-indigo-600 block pt-0.5 font-medium">🔍 클릭시 원본 보기</span>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('creativeModal').classList.add('active');
+    };
+
+    window.closeCreativeModal = function() {
+      document.getElementById('creativeModal').classList.remove('active');
+    };
+
     function checkAuth() {
       const rawVal = document.getElementById('pwInput').value;
       const val = rawVal ? rawVal.replace(/[\u200B-\u200D\uFEFF]/g, '').trim() : '';
-      if (val === '1119') {
-        sessionStorage.setItem('ybh_auth_granted', 'true');
+      if (val === '05201119') {
+        const expiryTime = Date.now() + (8 * 60 * 60 * 1000); 
+        localStorage.setItem('ybh_auth_expiry', expiryTime);
         unlockDashboard();
       } else {
         document.getElementById('pwError').classList.remove('hidden');
@@ -372,7 +437,7 @@
     let sortDesc = true;
     let trendChartInstance = null;
     let topChartInstance = null;
-    let simHistoricalData = { salesToPurCPA: 0, salesToRegCPA: 0, purToRegCPA: 0, purToPurCPA: 0 };
+    let simHistoricalData = { baseSpend: 0, salesToPurCPA: 0, salesToRegCPA: 0, purToRegCPA: 0, purToPurCPA: 0 };
     let tableChannelTab = 'ALL';
     let tableActionTab = 'ALL';
 
@@ -385,8 +450,7 @@
 
     const growthQuotes = [
       "완벽한 타이밍 기다리다가 영원히 제자리일 것이다", "그냥 해라, 반은 간다 밤을 새워서라도 해내라",
-      "성과는 잔고와 비례한다",
-      "우리는 아무도 범접할 수 없는 부자가 된다", "뒤도 돌아보지말고 앞으로만 가라, 우리에겐 성과뿐이다"
+      "성과는 잔고와 비례한다", "우리는 아무도 범접할 수 없는 부자가 된다", "뒤도 돌아보지말고 앞으로만 가라, 우리에겐 성과뿐이다"
     ];
     let quoteIdx = 0;
     document.addEventListener("DOMContentLoaded", () => {
@@ -418,6 +482,12 @@
       return '';
     }
 
+    function getDOW(dateStr) {
+      const parts = dateStr.split('-');
+      if(parts.length < 3) return 0;
+      return new Date(parts[0], parts[1]-1, parts[2]).getDay();
+    }
+
     function updateStatusBadge(text, isSuccess) {
       const badge = document.getElementById('dataStatusBadge');
       if(badge) {
@@ -431,15 +501,6 @@
     function formatCurrency(num) { return (num === null || isNaN(num) || num === Infinity || num === 0) ? '-' : '₩' + Math.round(num).toLocaleString(); }
     function formatNumber(num) { return (num === null || isNaN(num) || num === 0) ? '0' : Math.round(num).toLocaleString(); }
     
-    function calculateTrendBadge(current, prev, isCost = false) {
-      if (!prev) return '<span class="text-[10px] sm:text-xs text-slate-400 block">-</span>';
-      const pct = ((current - prev) / prev) * 100;
-      if (Math.abs(pct) < 0.05) return '<span class="text-[10px] sm:text-xs text-slate-400 block">0.0%</span>';
-      const isUp = pct > 0;
-      const colorClass = isCost ? (isUp ? 'trend-cost-up' : 'trend-cost-down') : (isUp ? 'trend-good' : 'trend-bad');
-      return `<span class="text-[10px] sm:text-xs ${colorClass} block">${isUp ? '▲' : '▼'} ${Math.abs(pct).toFixed(1)}%</span>`;
-    }
-
     function formatSimBudget(inputEl) {
       let val = inputEl.value.replace(/,/g, '').replace(/[^0-9]/g, '');
       if(val === '') val = '0';
@@ -452,12 +513,54 @@
       return el ? (Number(el.value.replace(/,/g, '')) || 0) : 0;
     }
 
+    function clearQuickDateButtons() {
+      ['btn-yesterday', 'btn-lastWeek', 'btn-lastMonth'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.className = "bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold py-1.5 px-2.5 rounded-lg transition-colors border border-slate-200";
+      });
+    }
+
+    function setQuickDate(type) {
+      clearQuickDateButtons();
+      const activeBtn = document.getElementById('btn-' + type);
+      if(activeBtn) {
+        activeBtn.className = "bg-white text-indigo-700 text-[11px] font-bold py-1.5 px-2.5 rounded-lg transition-colors border border-indigo-600 shadow-sm";
+      }
+
+      const today = new Date();
+      let start, end;
+
+      if (type === 'yesterday') {
+        start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+        end = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+      } else if (type === 'lastWeek') {
+        const day = today.getDay() || 7; 
+        start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - day - 6);
+        end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+      } else if (type === 'lastMonth') {
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth(), 0);
+      }
+
+      const fmt = (d) => {
+        const yy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yy}-${mm}-${dd}`;
+      };
+
+      document.getElementById('customStartDate').value = fmt(start);
+      document.getElementById('customEndDate').value = fmt(end);
+      renderDashboard();
+    }
+
     function processDualColumnSheet(rows) {
       const parsed = [];
       if (!rows || rows.length < 2) return;
 
       let metaMap = null;
       let googleMap = null;
+      let globalUrlIndices = {};
 
       for (let r = 0; r < Math.min(rows.length, 10); r++) {
         const row = rows[r];
@@ -482,6 +585,10 @@
             if (h === '클릭수') googleMap.clicks = idx;
             if (h === '비용') googleMap.spend = idx;
             if (h === '결과') googleMap.results = idx;
+
+            if (h === 'url1') globalUrlIndices.url1 = idx;
+            if (h === 'url2') globalUrlIndices.url2 = idx;
+            if (h === 'url3') globalUrlIndices.url3 = idx;
           });
           break;
         }
@@ -490,8 +597,17 @@
       if (!metaMap || metaMap.name === undefined) metaMap = { name: 1, date: 2, imp: 3, clicks: 4, spend: 5, reg: 6, pur: 8, rev: 9 };
       if (!googleMap || googleMap.name === undefined) googleMap = { name: 14, date: 16, imp: 17, clicks: 18, spend: 20, results: 21 };
 
+      const extractUrls = (rowData) => {
+        return [
+          globalUrlIndices.url1 !== undefined ? String(rowData[globalUrlIndices.url1] || '').trim() : '',
+          globalUrlIndices.url2 !== undefined ? String(rowData[globalUrlIndices.url2] || '').trim() : '',
+          globalUrlIndices.url3 !== undefined ? String(rowData[globalUrlIndices.url3] || '').trim() : ''
+        ].filter(u => u !== '' && u.startsWith('http'));
+      };
+
       rows.forEach(row => {
         if (!row || row.length === 0) return;
+        const urls = extractUrls(row);
 
         if (metaMap.date !== undefined && metaMap.name !== undefined && row[metaMap.date]) {
           const mDate = normalizeDate(row[metaMap.date]);
@@ -509,7 +625,7 @@
             const isSale = mName.includes('판매') || mName.includes('구입');
             const type = isBuy ? '매입' : (isSale ? '판매' : '혼합');
 
-            parsed.push({ date: mDate, name: mName, channel: '메타', spend: spendKrw, reg: reg, pur: pur, rev: revKrw, imp: imp, clicks: clicks, type: type });
+            parsed.push({ date: mDate, name: mName, channel: '메타', spend: spendKrw, reg: reg, pur: pur, rev: revKrw, imp: imp, clicks: clicks, type: type, urls: urls });
           }
         }
 
@@ -536,7 +652,8 @@
             const isSale = gName.includes('판매') || gName.includes('구입');
             const type = isBuy ? '매입' : (isSale ? '판매' : '혼합');
 
-            parsed.push({ date: gDate, name: gName, channel: '구글', spend: spendKrw, reg: reg, pur: pur, rev: 0, imp: imp, clicks: clicks, type: type });
+            // 구글 행은 메타와 무관하게 자체 urls가 없으면 빈 배열 유지 (타 채널 오염 원천 차단)
+            parsed.push({ date: gDate, name: gName, channel: '구글', spend: spendKrw, reg: reg, pur: pur, rev: 0, imp: imp, clicks: clicks, type: type, urls: [] });
           }
         }
       });
@@ -581,7 +698,7 @@
 
     function loadFallbackData() {
       rawDailyData = BASE_DATA.map(item => {
-        return { date: item[0], name: item[1], channel: item[2], spend: item[3], reg: item[4], pur: item[5], rev: item[6], imp: item[7], clicks: item[8], type: item[9] };
+        return { date: item[0], name: item[1], channel: item[2], spend: item[3], reg: item[4], pur: item[5], rev: item[6], imp: item[7], clicks: item[8], type: item[9], urls: [] };
       });
       const startEl = document.getElementById('customStartDate');
       const endEl = document.getElementById('customEndDate');
@@ -613,12 +730,15 @@
       const targetList = rawDailyData.filter(filterFn);
       let sSpend = 0, sPur = 0, sReg = 0;
       let pSpend = 0, pPur = 0, pReg = 0;
+      let totalFilteredSpend = 0;
 
       targetList.forEach(d => {
+        totalFilteredSpend += d.spend;
         if (d.type === '판매') { sSpend += d.spend; sPur += d.pur; sReg += d.reg; } 
         else if (d.type === '매입') { pSpend += d.spend; pPur += d.pur; pReg += d.reg; }
       });
 
+      simHistoricalData.baseSpend = totalFilteredSpend;
       simHistoricalData.salesToPurCPA = sPur > 0 ? sSpend / sPur : Infinity;
       simHistoricalData.salesToRegCPA = sReg > 0 ? sSpend / sReg : Infinity;
       simHistoricalData.purToRegCPA = pReg > 0 ? pSpend / pReg : Infinity;
@@ -646,10 +766,29 @@
       if(txtSales) txtSales.textContent = formatCurrency(salesBudget);
       if(txtPur) txtPur.textContent = formatCurrency(purBudget);
 
-      let expPurFromSales = simHistoricalData.salesToPurCPA !== Infinity ? salesBudget / simHistoricalData.salesToPurCPA : 0;
-      let expRegFromSales = simHistoricalData.salesToRegCPA !== Infinity ? salesBudget / simHistoricalData.salesToRegCPA : 0;
-      let expRegFromPur = simHistoricalData.purToRegCPA !== Infinity ? purBudget / simHistoricalData.purToRegCPA : 0;
-      let expPurFromPur = simHistoricalData.purToPurCPA !== Infinity ? purBudget / simHistoricalData.purToPurCPA : 0;
+      const baseSpend = simHistoricalData.baseSpend || 1; 
+      let penalty = 1.0;
+      if (baseSpend > 0 && totalBudget > baseSpend * 1.3) {
+          const excessRatio = totalBudget / baseSpend; 
+          penalty = 1 + (excessRatio - 1.3) * 0.2; 
+          if (penalty > 1.5) penalty = 1.5; 
+      }
+
+      const warningEl = document.getElementById('simPenaltyWarning');
+      const penaltyPctEl = document.getElementById('simPenaltyPct');
+      if (warningEl && penaltyPctEl) {
+        if (penalty > 1.0) {
+          penaltyPctEl.textContent = Math.round((penalty - 1) * 100);
+          warningEl.classList.remove('hidden');
+        } else {
+          warningEl.classList.add('hidden');
+        }
+      }
+
+      let expPurFromSales = simHistoricalData.salesToPurCPA !== Infinity ? salesBudget / (simHistoricalData.salesToPurCPA * penalty) : 0;
+      let expRegFromSales = simHistoricalData.salesToRegCPA !== Infinity ? salesBudget / (simHistoricalData.salesToRegCPA * penalty) : 0;
+      let expRegFromPur = simHistoricalData.purToRegCPA !== Infinity ? purBudget / (simHistoricalData.purToRegCPA * penalty) : 0;
+      let expPurFromPur = simHistoricalData.purToPurCPA !== Infinity ? purBudget / (simHistoricalData.purToPurCPA * penalty) : 0;
 
       const totalExpPur = expPurFromSales + expPurFromPur;
       const totalExpReg = expRegFromSales + expRegFromPur;
@@ -668,8 +807,8 @@
       if(expRegEl) expRegEl.textContent = formatNumber(totalExpReg) + '건';
       if(expTotalEl) expTotalEl.textContent = formatNumber(totalConvs) + '건';
       if(expCpaEl) expCpaEl.textContent = formatCurrency(blendedCPA);
-      if(detSalesEl) detSalesEl.innerHTML = `판매직접: <b>${formatNumber(expPurFromSales)}</b>건<br><span class="text-indigo-500">+매입시너지: <b>${formatNumber(expPurFromPur)}</b>건</span>`;
-      if(detPurEl) detPurEl.innerHTML = `매입직접: <b>${formatNumber(expRegFromPur)}</b>건<br><span class="text-indigo-500">+판매시너지: <b>${formatNumber(expRegFromSales)}</b>건</span>`;
+      if(detSalesEl) detSalesEl.innerHTML = `판매직접: <b class="text-slate-200">${formatNumber(expPurFromSales)}</b>건<br><span class="text-blue-500">+매입시너지: <b>${formatNumber(expPurFromPur)}</b>건</span>`;
+      if(detPurEl) detPurEl.innerHTML = `매입직접: <b class="text-slate-200">${formatNumber(expRegFromPur)}</b>건<br><span class="text-purple-500">+판매시너지: <b>${formatNumber(expRegFromSales)}</b>건</span>`;
     }
 
     function aggregateData(filterFn) {
@@ -679,14 +818,20 @@
       targetList.forEach(d => {
         tSpend += d.spend; tReg += d.reg; tPur += d.pur; tRev += d.rev; tClicks += d.clicks;
         const key = `${d.channel}_${d.name}`;
-        if (!map[key]) map[key] = { name: d.name, channel: d.channel, spend: 0, reg: 0, pur: 0, rev: 0, clicks: 0 };
+        if (!map[key]) {
+          map[key] = { name: d.name, channel: d.channel, spend: 0, reg: 0, pur: 0, rev: 0, clicks: 0, urls: [...(d.urls || [])] };
+        } else {
+          if (map[key].urls.length === 0 && d.urls && d.urls.length > 0) {
+            map[key].urls = [...d.urls];
+          }
+        }
         map[key].spend += d.spend; map[key].reg += d.reg; map[key].pur += d.pur; map[key].rev += d.rev; map[key].clicks += d.clicks;
       });
 
       const items = Object.keys(map).map(k => {
         const i = map[k]; const conv = i.reg + i.pur;
         return {
-          name: i.name, channel: i.channel, spend: i.spend, reg: i.reg, pur: i.pur, clicks: i.clicks,
+          name: i.name, channel: i.channel, spend: i.spend, reg: i.reg, pur: i.pur, clicks: i.clicks, urls: i.urls,
           total_conv: conv, cpa_reg: i.reg > 0 ? i.spend/i.reg : Infinity, cpa_pur: i.pur > 0 ? i.spend/i.pur : Infinity,
           cpa_total: conv > 0 ? i.spend/conv : Infinity, cvr: i.clicks > 0 ? (conv / i.clicks) * 100 : 0, roas: i.spend > 0 ? (i.rev/i.spend)*100 : 0
         };
@@ -700,20 +845,46 @@
 
     function calculateExpectedPerformance() {
       if (!rawDailyData || rawDailyData.length === 0) return;
-      const uniqueDates = [...new Set(rawDailyData.map(d => d.date))].sort();
-      const recentDates = uniqueDates.slice(-7);
+      const todayDOW = new Date().getDay();
+
+      const uniqueDates = [...new Set(rawDailyData.map(d => d.date))];
+      let totalSp = 0, totalReg = 0, totalPur = 0;
+      rawDailyData.forEach(d => { totalSp += d.spend; totalReg += d.reg; totalPur += d.pur; });
+      const overallAvgSp = totalSp / uniqueDates.length;
+      const overallAvgReg = totalReg / uniqueDates.length;
+      const overallAvgPur = totalPur / uniqueDates.length;
+
+      const dowDates = uniqueDates.filter(dateStr => getDOW(dateStr) === todayDOW);
+      let dowSp = 0, dowReg = 0, dowPur = 0;
+      const dowData = rawDailyData.filter(d => dowDates.includes(d.date));
+      dowData.forEach(d => { dowSp += d.spend; dowReg += d.reg; dowPur += d.pur; });
+
+      const dowAvgSp = dowDates.length > 0 ? dowSp / dowDates.length : overallAvgSp;
+      const dowAvgReg = dowDates.length > 0 ? dowReg / dowDates.length : overallAvgReg;
+      const dowAvgPur = dowDates.length > 0 ? dowPur / dowDates.length : overallAvgPur;
+
+      const idxSp = overallAvgSp > 0 ? dowAvgSp / overallAvgSp : 1;
+      const idxReg = overallAvgReg > 0 ? dowAvgReg / overallAvgReg : 1;
+      const idxPur = overallAvgPur > 0 ? dowAvgPur / overallAvgPur : 1;
+
+      const recentDates = uniqueDates.sort().slice(-7);
       const recentList = rawDailyData.filter(d => recentDates.includes(d.date));
-      let tSp = 0, tReg = 0, tPur = 0;
-      recentList.forEach(d => { tSp += d.spend; tReg += d.reg; tPur += d.pur; });
+      let rSp = 0, rReg = 0, rPur = 0;
+      recentList.forEach(d => { rSp += d.spend; rReg += d.reg; rPur += d.pur; });
       const dCnt = recentDates.length || 1;
+
+      const finalSp = (rSp / dCnt) * idxSp;
+      const finalReg = (rReg / dCnt) * idxReg;
+      const finalPur = (rPur / dCnt) * idxPur;
+
       const mSpend = document.getElementById('modalExpSpend');
       const mReg = document.getElementById('modalExpReg');
       const mPur = document.getElementById('modalExpPur');
       const mTotal = document.getElementById('modalExpTotal');
-      if(mSpend) mSpend.textContent = formatCurrency(tSp / dCnt);
-      if(mReg) mReg.textContent = formatNumber(tReg / dCnt) + '건';
-      if(mPur) mPur.textContent = formatNumber(tPur / dCnt) + '건';
-      if(mTotal) mTotal.textContent = formatNumber((tReg + tPur) / dCnt) + '건';
+      if(mSpend) mSpend.textContent = formatCurrency(finalSp);
+      if(mReg) mReg.textContent = formatNumber(finalReg) + '건';
+      if(mPur) mPur.textContent = formatNumber(finalPur) + '건';
+      if(mTotal) mTotal.textContent = formatNumber(finalReg + finalPur) + '건';
     }
 
     function setTableChannelTab(ch) {
@@ -845,8 +1016,8 @@
       const map = {}; 
       rawDailyData.forEach(d => {
         if ((tFilt === 'ALL' || d.type === tFilt) && (cFilt === 'ALL' || d.channel === cFilt)) {
-          const start = document.getElementById('customStartDate').value;
-          const end = document.getElementById('customEndDate').value;
+          const start = document.getElementById('customStartDate');
+          const end = document.getElementById('customEndDate');
           if (start && end && (d.date < start || d.date > end)) return;
 
           let keyVal = d.date;
@@ -961,9 +1132,21 @@
       tb.innerHTML = '';
       tData.forEach(r => {
         const bCls = r.channel === '메타' ? 'badge-meta' : 'badge-google';
+        
+        const urlsStr = r.urls && r.urls.length > 0 ? r.urls.join(',') : '';
+        const hasUrl = urlsStr.length > 0;
+        const clickAttr = hasUrl ? `onclick="openCreativeModal('${r.channel}', '${r.name.replace(/'/g, "\\'")}', '${urlsStr}')"` : '';
+        const nameStyle = hasUrl 
+          ? 'cursor-pointer text-indigo-600 hover:text-indigo-800 font-bold underline decoration-indigo-300 decoration-dashed underline-offset-4' 
+          : 'text-slate-900';
+
         const tr = document.createElement('tr'); tr.className = 'hover:bg-slate-50 transition-colors';
         tr.innerHTML = `
-          <td class="py-2.5 px-3 sm:px-4 font-bold text-slate-900 sticky-col truncate max-w-[190px] sm:max-w-none"><span class="${bCls}">${r.channel}</span>${r.name} ${r.customBadge}</td>
+          <td class="py-2.5 px-3 sm:px-4 sticky-col truncate max-w-[210px] sm:max-w-none">
+            <span class="${bCls}">${r.channel}</span>
+            <span class="${nameStyle}" ${clickAttr}>${r.name}</span>
+            ${r.customBadge}
+          </td>
           <td class="py-2.5 px-3 sm:px-4 text-right"><span class="font-bold text-slate-900">${formatCurrency(r.spend)}</span> ${r.budgetAction}</td>
           <td class="py-2.5 px-3 sm:px-4 text-right bg-purple-50/50"><span class="font-bold text-purple-600">${formatNumber(r.reg)}</span></td>
           <td class="py-2.5 px-3 sm:px-4 text-right"><span class="font-semibold text-slate-600">${formatCurrency(r.cpa_reg)}</span></td>
@@ -978,7 +1161,6 @@
       });
     }
 
-    // 모바일 전용 카드 뷰 렌더링 함수
     function renderMobileCards(currList) {
       const container = document.getElementById('mobileCardContainer');
       if(!container) return;
@@ -1000,6 +1182,13 @@
         }
 
         const bCls = c.channel === '메타' ? 'badge-meta' : 'badge-google';
+        
+        const urlsStr = c.urls && c.urls.length > 0 ? c.urls.join(',') : '';
+        const hasUrl = urlsStr.length > 0;
+        const clickAttr = hasUrl ? `onclick="openCreativeModal('${c.channel}', '${c.name.replace(/'/g, "\\'")}', '${urlsStr}')"` : '';
+        const nameStyle = hasUrl 
+          ? 'cursor-pointer text-indigo-600 hover:text-indigo-800 font-bold underline decoration-indigo-300 decoration-dashed underline-offset-4' 
+          : 'text-slate-900';
 
         const card = document.createElement('div');
         card.className = "bg-slate-50/80 p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-2.5";
@@ -1007,7 +1196,7 @@
           <div class="flex items-center justify-between border-b border-slate-200/60 pb-2">
             <div class="flex items-center gap-1.5 truncate max-w-[210px]">
               <span class="${bCls}">${c.channel}</span>
-              <span class="font-bold text-slate-900 text-xs truncate">${c.name}</span>
+              <span class="text-xs truncate ${nameStyle}" ${clickAttr}>${c.name}</span>
             </div>
             <div>${badgeHtml} ${budgetAction}</div>
           </div>
