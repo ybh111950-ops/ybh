@@ -584,6 +584,7 @@
             if (h === '클릭수') googleMap.clicks = idx;
             if (h === '비용') googleMap.spend = idx;
             if (h === '결과') googleMap.results = idx;
+            if (h === '결과 값' || h === '결과값') googleMap.rev = idx;
 
             if (h === 'url1') globalUrlIndices.url1 = idx;
             if (h === 'url2') globalUrlIndices.url2 = idx;
@@ -594,7 +595,7 @@
       }
 
       if (!metaMap || metaMap.name === undefined) metaMap = { name: 1, date: 2, imp: 3, clicks: 4, spend: 5, reg: 6, pur: 8, rev: 9 };
-      if (!googleMap || googleMap.name === undefined) googleMap = { name: 14, date: 16, imp: 17, clicks: 18, spend: 20, results: 21 };
+      if (!googleMap || googleMap.name === undefined) googleMap = { name: 14, date: 16, imp: 17, clicks: 18, spend: 20, results: 21, rev: 25 };
 
       const extractUrls = (rowData) => {
         return [
@@ -647,11 +648,20 @@
 
             const reg = resMap['예약'] || 0;
             const pur = resMap['구매하기'] || 0;
+
+            // 수정된 구글 결과 값(순수 숫자) 파싱 로직
+            let revKrw = 0;
+            let revCellVal = googleMap.rev !== undefined ? (row[googleMap.rev] || '') : '';
+            if (revCellVal !== '' && revCellVal !== '-' && revCellVal !== '0') {
+              let cleanNum = parseFloat(String(revCellVal).replace(/,/g, '')) || 0;
+              revKrw = cleanNum;
+            }
+
             const isBuy = gName.includes('매입');
             const isSale = gName.includes('판매') || gName.includes('구입');
             const type = isBuy ? '매입' : (isSale ? '판매' : '혼합');
 
-            parsed.push({ date: gDate, name: gName, channel: '구글', spend: spendKrw, reg: reg, pur: pur, rev: 0, imp: imp, clicks: clicks, type: type, urls: [] });
+            parsed.push({ date: gDate, name: gName, channel: '구글', spend: spendKrw, reg: reg, pur: pur, rev: revKrw, imp: imp, clicks: clicks, type: type, urls: [] });
           }
         }
       });
