@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -9,9 +9,13 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   
   <script>
-    tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Pretendard Variable"', 'Pretendard', '-apple-system', 'sans-serif'], } } } }
+    tailwind.config = { 
+      darkMode: 'class',
+      theme: { extend: { fontFamily: { sans: ['"Pretendard Variable"', 'Pretendard', '-apple-system', 'sans-serif'], } } } 
+    }
   </script>
 
   <style>
@@ -23,14 +27,22 @@
     .trend-cost-up { color: #ef4444; font-weight: 600; }   
     th { cursor: pointer; user-select: none; transition: background-color 0.15s; }
     th:hover { background-color: #e2e8f0; }
+    .dark th:hover { background-color: #334155; }
     .sort-icon { display: inline-block; width: 14px; margin-left: 2px; color: #94a3b8; font-size: 11px; }
     
     .sticky-col { position: sticky; left: 0; background-color: #ffffff; z-index: 10; box-shadow: 2px 0 6px -2px rgba(0, 0, 0, 0.1); }
     th.sticky-col { background-color: #f1f5f9; z-index: 20; }
+    tfoot .sticky-col { background-color: #f8fafc; z-index: 20; }
+    
+    .dark .sticky-col { background-color: #1e293b; box-shadow: 2px 0 6px -2px rgba(255, 255, 255, 0.05); }
+    .dark th.sticky-col { background-color: #0f172a; }
+    .dark tfoot .sticky-col { background-color: #0f172a; }
+    
     .touch-scroll { -webkit-overflow-scrolling: touch; }
     
     .table-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
     .table-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+    .dark .table-scrollbar::-webkit-scrollbar-thumb { background-color: #475569; }
     
     .badge-meta { background-color: #e0e7ff; color: #4338ca; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-right: 4px; }
     .badge-google { background-color: #dcfce7; color: #15803d; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-right: 4px; }
@@ -45,8 +57,8 @@
     .badge-replace-meta { background: #eff6ff; color: #1e40af; border: 1px dashed #3b82f6; }
     .badge-replace-google { background: #fef2f2; color: #991b1b; border: 1px dashed #ef4444; }
 
-    .badge-up { background: #dcfce7; color: #166534; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-left: 4px; }
-    .badge-down { background: #fee2e2; color: #991b1b; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-left: 4px; }
+    .badge-up { background: #dcfce7; color: #166534; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-block; }
+    .badge-down { background: #fee2e2; color: #991b1b; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-block; }
 
     .quote-ticker { transition: opacity 0.5s ease-in-out; opacity: 1; overflow: hidden; white-space: nowrap; position: relative; }
     
@@ -56,20 +68,24 @@
     .modal-overlay.active .modal-content { transform: scale(1); }
 
     #loginScreen { backdrop-filter: blur(8px); }
+
+    /* 비교모드 토글 스위치 커스텀 */
+    .toggle-checkbox:checked { right: 0; border-color: #4f46e5; }
+    .toggle-checkbox:checked + .toggle-label { background-color: #4f46e5; }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased pb-12 overflow-x-hidden" id="mainBody">
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 antialiased pb-12 overflow-x-hidden transition-colors duration-300" id="mainBody">
   
   <!-- 보안 로그인 스크린 -->
   <div id="loginScreen" class="fixed inset-0 bg-slate-900/95 z-[999] flex flex-col items-center justify-center p-4 transition-opacity duration-500">
-    <div class="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center space-y-6">
-      <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto text-3xl shadow-inner">🔒</div>
+    <div class="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center space-y-6">
+      <div class="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center mx-auto text-3xl shadow-inner">🔒</div>
       <div>
-        <h2 class="text-xl font-bold text-slate-900">광고분석 대시보드</h2>
-        <p class="text-xs text-slate-500 mt-1">담당자만 접근할 수 있습니다.</p>
+        <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">광고분석 대시보드</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">담당자만 접근할 수 있습니다.</p>
       </div>
       <div>
-        <input type="password" id="pwInput" placeholder="비밀번호 입력" class="w-full border border-slate-300 rounded-xl px-4 py-3.5 text-center text-xl tracking-widest font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow" onkeypress="if(event.key==='Enter') checkAuth()">
+        <input type="password" id="pwInput" placeholder="비밀번호 입력" class="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-xl px-4 py-3.5 text-center text-xl tracking-widest font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow" onkeypress="if(event.key==='Enter') checkAuth()">
         <p id="pwError" class="text-xs text-rose-500 font-semibold mt-2 hidden">비밀번호가 일치하지 않습니다.</p>
       </div>
       <button onclick="checkAuth()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl transition-colors shadow-md">입장하기</button>
@@ -77,33 +93,27 @@
   </div>
 
   <!-- 우측 플로팅 트리거 버튼 -->
-  <button onclick="toggleSimDrawer()" class="fixed right-0 top-[22%] bg-slate-900 hover:bg-slate-800 text-white py-4 px-2.5 rounded-l-xl shadow-2xl z-40 transition-all border border-slate-700 flex flex-col items-center gap-2 group">
+  <button onclick="toggleSimDrawer()" class="fixed right-0 top-[22%] bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white py-4 px-2.5 rounded-l-xl shadow-2xl z-40 transition-all border border-slate-700 flex flex-col items-center gap-2 group">
     <span class="text-base group-hover:scale-110 transition-transform">🔮</span>
     <span class="text-[11px] font-bold tracking-widest leading-tight text-center" style="writing-mode: vertical-rl; text-orientation: mixed;">시뮬레이터</span>
   </button>
 
   <!-- 우측 슬라이드 시뮬레이터 패널 -->
-  <div id="simDrawer" class="fixed right-0 top-0 h-full w-full sm:w-[480px] bg-slate-900 text-slate-100 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 overflow-y-auto border-l border-slate-800 flex flex-col">
-    <!-- 패널 헤더 -->
-    <div class="flex items-center justify-between p-4 border-b border-slate-800 sticky top-0 bg-slate-900/95 backdrop-blur z-10">
+  <div id="simDrawer" class="fixed right-0 top-0 h-full w-full sm:w-[480px] bg-slate-900 dark:bg-slate-950 text-slate-100 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 overflow-y-auto border-l border-slate-800 flex flex-col">
+    <div class="flex items-center justify-between p-4 border-b border-slate-800 sticky top-0 bg-slate-900/95 dark:bg-slate-950/95 backdrop-blur z-10">
       <div class="flex items-center gap-2">
         <span class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[10px] px-2 py-0.5 rounded font-bold shadow-sm">🔮 시뮬레이터</span>
         <h3 class="text-sm font-bold text-slate-100">예산 분배 및 예상 성과</h3>
       </div>
       <button onclick="toggleSimDrawer()" class="text-slate-400 hover:text-white text-3xl leading-none transition-colors">&times;</button>
     </div>
-
-    <!-- 패널 콘텐츠 -->
     <div class="p-4 sm:p-5 space-y-4 flex-1">
-      <!-- 명언 영역 -->
       <div class="flex flex-col gap-2.5 border-b border-slate-800 pb-3">
         <div class="flex items-center gap-2 overflow-hidden">
           <span class="bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded font-bold whitespace-nowrap"></span>
           <div class="quote-ticker text-xs font-medium text-slate-200 truncate" id="quoteTickerContainer">로딩 중...</div>
         </div>
       </div>
-
-      <!-- 1. 데이터 산출 기준 기간 (모수 결정) -->
       <div class="space-y-2 bg-slate-800/60 p-3.5 rounded-xl border border-slate-700/60">
         <div class="flex items-center justify-between">
           <label class="text-xs font-bold text-slate-300">📊 1. 데이터 산출 기준 기간 (모수)</label>
@@ -124,14 +134,11 @@
           </select>
         </div>
       </div>
-
-      <!-- 2. 총 시뮬레이션 예산 및 집행 단위 기간 버튼 -->
       <div class="space-y-3 bg-slate-800/60 p-4 rounded-xl border border-slate-700/60 shadow-inner">
         <div>
           <div class="flex items-center justify-between mb-1.5">
             <label class="text-xs font-bold text-slate-300">💰 2. 총 시뮬레이션 예산 및 단위</label>
           </div>
-          <!-- 예산 집행 단위 선택 버튼 (하루, 한주, 한달, 분기) -->
           <div class="grid grid-cols-4 gap-1.5 text-[11px] font-bold mb-2.5" id="budgetUnitButtons">
             <button id="bUnit-DAY" onclick="setBudgetUnit('DAY')" class="py-1 rounded bg-slate-800 text-slate-400 border border-slate-700 transition-all">하루기준</button>
             <button id="bUnit-WEEK" onclick="setBudgetUnit('WEEK')" class="py-1 rounded bg-slate-800 text-slate-400 border border-slate-700 transition-all">한주기준</button>
@@ -153,8 +160,6 @@
           </div>
         </div>
       </div>
-
-      <!-- 결과 지표 영역 -->
       <div class="grid grid-cols-2 gap-3">
         <div class="bg-slate-800/80 p-3.5 rounded-xl border border-blue-900/50 shadow-sm flex flex-col justify-between relative overflow-hidden">
           <div class="absolute -right-2 -bottom-2 text-blue-500 opacity-10 text-5xl font-black">S</div>
@@ -184,75 +189,93 @@
   <div class="max-w-7xl mx-auto space-y-4 sm:space-y-6 p-3 sm:p-6 opacity-0 transition-opacity duration-700" id="dashboardContent">
     
     <!-- 컨트롤러 영역 -->
-    <div class="bg-white p-3.5 sm:p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 border-b border-slate-100 pb-3">
+    <div class="bg-white dark:bg-slate-800 p-3.5 sm:p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 border-b border-slate-100 dark:border-slate-700 pb-3">
         <div class="flex items-center gap-2.5">
-          <h1 class="text-base sm:text-lg font-bold text-slate-900">통합 대시보드</h1>
+          <h1 class="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">통합 대시보드</h1>
           <div class="flex items-center gap-1.5">
-            <span class="bg-indigo-50 text-indigo-700 text-[10px] sm:text-xs px-2 py-0.5 rounded font-medium border border-indigo-200">메타 1,547원</span>
-            <span id="dataStatusBadge" class="bg-emerald-50 text-emerald-700 text-[10px] sm:text-xs px-2 py-0.5 rounded font-medium border border-emerald-200">시트 연결 대기중...</span>
+            <span id="dataStatusBadge" class="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] sm:text-xs px-2 py-0.5 rounded font-medium border border-emerald-200 dark:border-emerald-800">시트 연결 대기중...</span>
           </div>
         </div>
-        <div class="flex items-center gap-2">
-          <!-- 오늘의 예상 성과 버튼을 대시보드 상단 밖으로 이동 -->
-          <button onclick="openExpectedPerformanceModal()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white text-xs font-bold py-2 px-3.5 rounded-lg shadow flex items-center gap-1.5 transition-colors">
-            <span>🎯 오늘 성과가 궁금해요?</span>
+        <div class="flex items-center gap-2 flex-wrap">
+          <button onclick="toggleDarkMode()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors shadow-sm flex items-center justify-center" title="야간모드 전환">
+            <span id="themeIcon" class="text-xs">🌙</span>
           </button>
-          <button onclick="fetchAllData()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold py-2 px-3 rounded-lg border border-slate-700 transition-colors shadow-sm flex items-center justify-center gap-1">
-            <span>🔄 시트 동기화</span>
-          </button>
+          <button onclick="exportPDF()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2 px-3 rounded-lg shadow flex items-center gap-1.5 transition-colors">📄 PDF 내보내기</button>
+          <button onclick="exportCSV()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded-lg shadow flex items-center gap-1.5 transition-colors">📊 CSV 내보내기</button>
+          <button onclick="openExpectedPerformanceModal()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white text-xs font-bold py-2 px-3.5 rounded-lg shadow flex items-center gap-1.5 transition-colors">🎯 오늘 성과</button>
+          <button onclick="fetchAllData()" class="bg-slate-800 dark:bg-slate-700 hover:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-semibold py-2 px-3 rounded-lg border border-slate-700 transition-colors shadow-sm flex items-center justify-center gap-1">🔄 동기화</button>
         </div>
       </div>
 
-      <div class="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2">
-        <div class="flex items-center gap-2 w-full sm:w-auto">
-          <select id="channelFilter" class="bg-white border border-slate-300 text-xs font-medium rounded-lg px-2.5 py-2 w-1/2 sm:w-auto" onchange="renderDashboard()">
+      <div class="flex flex-col xl:flex-row xl:items-center gap-2">
+        <div class="flex items-center gap-1.5 w-full xl:w-auto">
+          <select id="channelFilter" class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-xs font-medium rounded-lg px-2.5 py-2 w-1/2 sm:w-auto" onchange="syncChannelFilter(this.value)">
             <option value="ALL">전체 매체</option><option value="메타">Meta</option><option value="구글">Google</option>
           </select>
-          <select id="typeFilter" class="bg-white border border-slate-300 text-xs font-medium rounded-lg px-2.5 py-2 w-1/2 sm:w-auto" onchange="renderDashboard()">
+          <select id="typeFilter" class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-xs font-medium rounded-lg px-2.5 py-2 w-1/2 sm:w-auto" onchange="renderDashboard()">
             <option value="ALL">전체 BM</option><option value="판매">판매(구매)</option><option value="매입">매입(예약)</option>
           </select>
         </div>
         
-        <div class="flex flex-wrap sm:flex-nowrap items-center gap-1.5 w-full sm:w-auto">
+        <div class="flex flex-wrap items-center gap-1.5 w-full xl:w-auto mt-1.5 xl:mt-0">
           <div class="flex items-center gap-1">
-            <button id="btn-yesterday" onclick="setQuickDate('yesterday')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold py-1.5 px-2.5 rounded-lg transition-colors border border-slate-200">어제</button>
-            <button id="btn-lastWeek" onclick="setQuickDate('lastWeek')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold py-1.5 px-2.5 rounded-lg transition-colors border border-slate-200">저번주</button>
-            <button id="btn-lastMonth" onclick="setQuickDate('lastMonth')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold py-1.5 px-2.5 rounded-lg transition-colors border border-slate-200">저번달</button>
+            <button id="btn-yesterday" onclick="setQuickDate('yesterday')" class="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-[11px] font-bold py-1.5 px-2.5 rounded-lg transition-colors border border-slate-200 dark:border-slate-600">어제</button>
+            <button id="btn-lastWeek" onclick="setQuickDate('lastWeek')" class="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-[11px] font-bold py-1.5 px-2.5 rounded-lg transition-colors border border-slate-200 dark:border-slate-600">저번주</button>
+            <button id="btn-lastMonth" onclick="setQuickDate('lastMonth')" class="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-[11px] font-bold py-1.5 px-2.5 rounded-lg transition-colors border border-slate-200 dark:border-slate-600">저번달</button>
           </div>
-          <div class="flex items-center justify-between sm:justify-start gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs w-full sm:w-auto mt-1.5 sm:mt-0">
-            <input type="date" id="customStartDate" class="bg-white border border-slate-300 rounded px-2 py-1 text-xs font-medium outline-none focus:ring-1 focus:ring-indigo-500 w-[46%] sm:w-auto" onchange="clearQuickDateButtons(); renderDashboard();">
+          <div class="flex items-center justify-between sm:justify-start gap-1.5 bg-slate-50 dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs w-full sm:w-auto">
+            <input type="date" id="customStartDate" class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 text-xs font-medium outline-none focus:ring-1 focus:ring-indigo-500 w-[46%] sm:w-auto" onchange="syncCompareDates(); clearQuickDateButtons(); renderDashboard();">
             <span class="text-slate-400 font-bold">~</span>
-            <input type="date" id="customEndDate" class="bg-white border border-slate-300 rounded px-2 py-1 text-xs font-medium outline-none focus:ring-1 focus:ring-indigo-500 w-[46%] sm:w-auto" onchange="clearQuickDateButtons(); renderDashboard();">
+            <input type="date" id="customEndDate" class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 text-xs font-medium outline-none focus:ring-1 focus:ring-indigo-500 w-[46%] sm:w-auto" onchange="syncCompareDates(); clearQuickDateButtons(); renderDashboard();">
+          </div>
+          
+          <!-- 비교 모드 토글 (기본 ON) -->
+          <div class="flex items-center gap-1.5 w-full sm:w-auto mt-1 sm:mt-0">
+            <div class="flex items-center bg-slate-100 dark:bg-slate-700 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600">
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="compareModeToggle" class="sr-only toggle-checkbox" onchange="toggleCompareMode()" checked>
+                <div class="w-8 h-4 rounded-full toggle-label transition-colors duration-200 ease-in-out relative before:absolute before:content-[''] before:h-3 before:w-3 before:bg-white before:rounded-full before:top-[2px] before:left-[2px] before:transition-transform before:duration-200" style="background-color: #4f46e5;"></div>
+                <span class="ml-2 text-[11px] font-bold text-slate-700 dark:text-slate-300">비교모드</span>
+              </label>
+            </div>
+            
+            <!-- 커스텀 비교 기간 설정 달력 (기본 표시) -->
+            <div id="compareDateContainer" class="flex items-center justify-between sm:justify-start gap-1.5 bg-indigo-50 dark:bg-indigo-900/30 px-2.5 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800 text-xs w-full sm:w-auto transition-all">
+              <span class="font-bold text-indigo-700 dark:text-indigo-300">비교</span>
+              <input type="date" id="compareStartDate" class="bg-white dark:bg-slate-700 border border-indigo-200 dark:border-indigo-700 rounded px-2 py-1 text-xs font-medium outline-none focus:ring-1 focus:ring-indigo-500 w-[42%] sm:w-auto" onchange="renderDashboard()">
+              <span class="text-indigo-400 font-bold">~</span>
+              <input type="date" id="compareEndDate" class="bg-white dark:bg-slate-700 border border-indigo-200 dark:border-indigo-700 rounded px-2 py-1 text-xs font-medium outline-none focus:ring-1 focus:ring-indigo-500 w-[42%] sm:w-auto" onchange="renderDashboard()">
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- 인사이트 브리핑 박스 -->
-    <div class="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-200 space-y-2.5">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-2">
+    <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-2.5">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 dark:border-slate-700 pb-2">
         <div class="flex items-center gap-2">
-          <span class="bg-indigo-50 text-indigo-700 text-xs px-2 py-0.5 rounded font-bold border border-indigo-200">Summary</span>
-          <h3 class="text-sm sm:text-base font-bold text-slate-800">지표 인사이트</h3>
+          <span class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs px-2 py-0.5 rounded font-bold border border-indigo-200 dark:border-indigo-800">Summary</span>
+          <h3 class="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100">지표 인사이트</h3>
         </div>
         <div class="flex items-center justify-between sm:justify-end gap-3">
-          <span id="footerPeriodLabel" class="text-xs text-slate-400">조회 구간: -</span>
-          <button onclick="openLogicModal()" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-1.5 px-3 rounded-lg border border-slate-200 shadow-sm">📊 산출 근거 확인</button>
+          <span id="footerPeriodLabel" class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate max-w-[200px] sm:max-w-none">조회 구간: -</span>
+          <button onclick="openLogicModal()" class="text-[11px] bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 font-bold py-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm flex-shrink-0">📊 산출 근거 확인</button>
         </div>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs sm:text-sm">
-        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
-          <span class="text-indigo-600 font-semibold block mb-1">💡 요약</span>
-          <p id="footerSummaryText" class="text-slate-600 text-[11px] sm:text-xs font-medium">데이터 로딩 중...</p>
+        <div class="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+          <span class="text-indigo-600 dark:text-indigo-400 font-semibold block mb-1">💡 요약</span>
+          <p id="footerSummaryText" class="text-slate-600 dark:text-slate-300 text-[11px] sm:text-xs font-medium">데이터 로딩 중...</p>
         </div>
-        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
-          <span class="text-emerald-600 font-semibold block mb-1">👍 증액(고효율 소재)</span>
-          <p id="footerScaleUpText" class="text-slate-600 text-[11px] sm:text-xs font-medium">-</p>
+        <div class="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+          <span class="text-emerald-600 dark:text-emerald-400 font-semibold block mb-1">👍 증액(고효율 소재)</span>
+          <p id="footerScaleUpText" class="text-slate-600 dark:text-slate-300 text-[11px] sm:text-xs font-medium">-</p>
         </div>
-        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
-          <span class="text-rose-600 font-semibold block mb-1">🚨 검토 (저효율 소재)</span>
-          <p id="footerScaleDownText" class="text-slate-600 text-[11px] sm:text-xs font-medium">-</p>
+        <div class="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+          <span class="text-rose-600 dark:text-rose-400 font-semibold block mb-1">🚨 검토 (저효율 소재)</span>
+          <p id="footerScaleDownText" class="text-slate-600 dark:text-slate-300 text-[11px] sm:text-xs font-medium">-</p>
         </div>
       </div>
     </div>
@@ -262,153 +285,251 @@
 
     <!-- 차트 영역 -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-      <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
-        <h2 class="text-sm sm:text-base font-semibold text-slate-800 mb-3" id="trendChartTitle">채널 통합 시계열 추이 (비용 vs 합산 전환수)</h2>
+      <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-100" id="trendChartTitle">채널 통합 시계열 추이 (비용 vs 합산 전환수)</h2>
+          <span class="text-[10px] text-slate-400">💡 막대 클릭 시 상세 데이터 확인</span>
+        </div>
         <div class="relative h-60 sm:h-80"><canvas id="trendChart"></canvas></div>
       </div>
-      <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
-        <h2 class="text-sm sm:text-base font-semibold text-slate-800 mb-3">통합 비용 상위 5개 캠페인 (CPA & ROAS)</h2>
+      <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+        <h2 class="text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-100 mb-3">통합 비용 상위 5개 캠페인 (CPA & ROAS)</h2>
         <div class="relative h-60 sm:h-80"><canvas id="topCampaignChart"></canvas></div>
       </div>
     </div>
 
     <!-- 데이터 테이블 및 모바일 카드 영역 -->
-    <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+    <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div class="flex flex-col sm:flex-row sm:items-center gap-2.5">
-          <h2 class="text-sm sm:text-base font-semibold text-slate-800">캠페인별 세부 성과 및 예산 가이드</h2>
-          <div class="flex flex-wrap items-center gap-2">
-            <div class="inline-flex bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs shadow-sm">
-              <button onclick="setTableChannelTab('ALL')" id="tTabAll" class="px-2.5 sm:px-3 py-1 rounded-md font-bold bg-white text-slate-900 shadow-sm transition-all">전체</button>
-              <button onclick="setTableChannelTab('메타')" id="tTabMeta" class="px-2.5 sm:px-3 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900 transition-all">Meta</button>
-              <button onclick="setTableChannelTab('구글')" id="tTabGoogle" class="px-2.5 sm:px-3 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900 transition-all">Google</button>
-            </div>
-            <div class="inline-flex bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs shadow-sm">
-              <button onclick="setTableActionFilter('ALL')" id="tActAll" class="px-2 py-1 rounded-md font-bold bg-white shadow-sm transition-all text-slate-900">전체</button>
-              <button onclick="setTableActionFilter('UP')" id="tActUp" class="px-2 py-1 rounded-md font-medium text-emerald-700 hover:bg-emerald-50 transition-all">👍증액</button>
-              <button onclick="setTableActionFilter('DOWN')" id="tActDown" class="px-2 py-1 rounded-md font-medium text-rose-700 hover:bg-rose-50 transition-all">🚨감액</button>
-            </div>
+        <div class="flex flex-wrap items-center gap-2.5">
+          <h2 class="text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-100">캠페인별 세부 성과 및 예산 가이드</h2>
+          <div class="inline-flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg border border-slate-200 dark:border-slate-600 text-xs shadow-sm">
+            <button onclick="setTableChannelTab('ALL')" id="tTabAll" class="px-2.5 sm:px-3 py-1 rounded-md font-bold bg-white text-slate-900 shadow-sm transition-all">전체</button>
+            <button onclick="setTableChannelTab('메타')" id="tTabMeta" class="px-2.5 sm:px-3 py-1 rounded-md font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all">Meta</button>
+            <button onclick="setTableChannelTab('구글')" id="tTabGoogle" class="px-2.5 sm:px-3 py-1 rounded-md font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all">Google</button>
+          </div>
+          
+          <!-- 캠페인 유형 드롭다운 (매체 버튼 우측에 배치) -->
+          <div id="campaignTypeFilterWrapper" class="inline-block">
+            <select id="campaignTypeFilter" class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-xs font-semibold rounded-lg px-2.5 py-1.5 text-slate-700 dark:text-slate-200 outline-none shadow-sm transition-all cursor-pointer" onchange="renderDashboard()">
+              <option value="ALL">전체 캠페인 유형</option>
+              <!-- 동적 생성 -->
+            </select>
           </div>
         </div>
-        <span class="text-[11px] text-slate-400 hidden sm:inline">👍 증액 / ✋ 유지 / 🚨 감액 자동 판정 (보라색 캠페인명 클릭 시 소재 팝업)</span>
       </div>
       
       <!-- PC용 테이블 -->
-      <div class="hidden md:block overflow-x-auto touch-scroll table-scrollbar border border-slate-100 rounded-lg">
-        <table class="w-full text-left text-xs sm:text-sm text-slate-600 whitespace-nowrap min-w-[1050px]">
-          <thead class="bg-slate-100 text-slate-700 uppercase text-[11px] sm:text-xs">
+      <div class="hidden md:block overflow-x-auto touch-scroll table-scrollbar border border-slate-100 dark:border-slate-700 rounded-lg">
+        <table class="w-full text-left text-xs sm:text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap min-w-[1050px]">
+          <thead class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 uppercase text-[11px] sm:text-xs">
             <tr>
               <th class="py-3 px-3 sm:px-4 sticky-col font-bold" onclick="handleSort('name')">캠페인명 <span class="sort-icon" id="sort-name"></span></th>
               <th class="py-3 px-3 sm:px-4 text-right font-bold" onclick="handleSort('spend')">총 집행비용 <span class="sort-icon" id="sort-spend">▼</span></th>
-              <th class="py-3 px-3 sm:px-4 text-right text-purple-700 bg-purple-50 font-bold" onclick="handleSort('reg')">매입(예약) <span class="sort-icon" id="sort-reg"></span></th>
-              <th class="py-3 px-3 sm:px-4 text-right text-purple-700 font-bold" onclick="handleSort('cpa_reg')">매입 CPA <span class="sort-icon" id="sort-cpa_reg"></span></th>
-              <th class="py-3 px-3 sm:px-4 text-right text-blue-700 bg-blue-50 font-bold" onclick="handleSort('pur')">판매(구매) <span class="sort-icon" id="sort-pur"></span></th>
-              <th class="py-3 px-3 sm:px-4 text-right text-blue-700 font-bold" onclick="handleSort('cpa_pur')">판매 CPA <span class="sort-icon" id="sort-cpa_pur"></span></th>
-              <th class="py-3 px-3 sm:px-4 text-right text-emerald-700 bg-emerald-50 font-bold" onclick="handleSort('total_conv')">합산 전환수 <span class="sort-icon" id="sort-total_conv"></span></th>
-              <th class="py-3 px-3 sm:px-4 text-right text-emerald-700 font-bold" onclick="handleSort('cpa_total')">평균 합산 CPA <span class="sort-icon" id="sort-cpa_total"></span></th>
-              <th class="py-3 px-3 sm:px-4 text-right text-indigo-700 font-bold" onclick="handleSort('cvr')">CVR(%) <span class="sort-icon" id="sort-cvr"></span></th>
+              <th class="py-3 px-3 sm:px-4 text-right text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 font-bold" onclick="handleSort('reg')">매입(예약) <span class="sort-icon" id="sort-reg"></span></th>
+              <th class="py-3 px-3 sm:px-4 text-right text-purple-700 dark:text-purple-400 font-bold" onclick="handleSort('cpa_reg')">매입 CPA <span class="sort-icon" id="sort-cpa_reg"></span></th>
+              <th class="py-3 px-3 sm:px-4 text-right text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 font-bold" onclick="handleSort('pur')">판매(구매) <span class="sort-icon" id="sort-pur"></span></th>
+              <th class="py-3 px-3 sm:px-4 text-right text-blue-700 dark:text-blue-400 font-bold" onclick="handleSort('cpa_pur')">판매 CPA <span class="sort-icon" id="sort-cpa_pur"></span></th>
+              <th class="py-3 px-3 sm:px-4 text-right text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 font-bold" onclick="handleSort('total_conv')">합산 전환수 <span class="sort-icon" id="sort-total_conv"></span></th>
+              <th class="py-3 px-3 sm:px-4 text-right text-emerald-700 dark:text-emerald-400 font-bold" onclick="handleSort('cpa_total')">평균 합산 CPA <span class="sort-icon" id="sort-cpa_total"></span></th>
+              <th class="py-3 px-3 sm:px-4 text-right text-indigo-700 dark:text-indigo-400 font-bold" onclick="handleSort('cvr')">CVR(%) <span class="sort-icon" id="sort-cvr"></span></th>
               <th class="py-3 px-3 sm:px-4 text-right font-bold" onclick="handleSort('roas')">ROAS <span class="sort-icon" id="sort-roas"></span></th>
             </tr>
           </thead>
-          <tbody id="dataTableBody" class="divide-y divide-slate-100 font-medium"></tbody>
+          <tbody id="dataTableBody" class="divide-y divide-slate-100 dark:divide-slate-700 font-medium"></tbody>
+          <!-- 동적 렌더링되는 테이블 푸터 (합계) -->
+          <tfoot id="dataTableFoot" class="bg-slate-50 dark:bg-slate-800/80 border-t-2 border-slate-200 dark:border-slate-600 text-[11px] sm:text-xs">
+          </tfoot>
         </table>
       </div>
 
-      <!-- 모바일용 카드 리스트 -->
+      <!-- 모바일용 종합 요약 카드 (상단 배치) -->
+      <div class="block md:hidden mb-3" id="mobileSummaryCard"></div>
+      
+      <!-- 모바일용 개별 캠페인 카드 리스트 -->
       <div class="block md:hidden space-y-3" id="mobileCardContainer"></div>
     </div>
+
   </div>
 
   <!-- 소재 뷰어 모달 -->
   <div id="creativeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center modal-overlay p-4" onclick="closeCreativeModal()">
-    <div class="bg-white rounded-2xl max-w-lg w-full p-5 space-y-4 modal-content relative shadow-2xl" onclick="event.stopPropagation()">
-      <div class="flex items-center justify-between border-b pb-3">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-5 space-y-4 modal-content relative shadow-2xl" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between border-b dark:border-slate-700 pb-3">
         <div>
           <span id="modalCampaignChannel" class="text-[10px] font-bold px-2 py-0.5 rounded mr-1.5"></span>
-          <h3 id="modalCampaignName" class="text-sm font-bold text-slate-900 inline">캠페인 소재 뷰어</h3>
+          <h3 id="modalCampaignName" class="text-sm font-bold text-slate-900 dark:text-slate-100 inline">캠페인 소재 뷰어</h3>
         </div>
-        <button onclick="closeCreativeModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl leading-none">&times;</button>
+        <button onclick="closeCreativeModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold text-xl leading-none">&times;</button>
       </div>
       <div id="modalCreativeContainer" class="grid grid-cols-1 sm:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto p-1"></div>
-      <button onclick="closeCreativeModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-sm transition-colors mt-2">확인</button>
+      <button onclick="closeCreativeModal()" class="w-full bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-sm transition-colors mt-2">확인</button>
+    </div>
+  </div>
+
+  <!-- 드릴다운 모달 -->
+  <div id="drillDownModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center modal-overlay p-4" onclick="closeDrillDownModal()">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-2xl w-full p-5 space-y-4 modal-content relative shadow-2xl" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between border-b dark:border-slate-700 pb-3">
+        <h3 class="text-base font-bold text-slate-900 dark:text-slate-100" id="drillDownTitle">상세 데이터</h3>
+        <button onclick="closeDrillDownModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold text-xl leading-none">&times;</button>
+      </div>
+      <div class="max-h-[60vh] overflow-y-auto overflow-x-auto touch-scroll table-scrollbar border border-slate-100 dark:border-slate-700 rounded-lg">
+        <table class="w-full text-left text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap min-w-[600px]">
+          <thead class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 uppercase text-[10px]">
+            <tr>
+              <th class="py-2 px-3 sticky-col font-bold">캠페인명</th>
+              <th class="py-2 px-3 text-right font-bold">매체</th>
+              <th class="py-2 px-3 text-right font-bold">집행비용</th>
+              <th class="py-2 px-3 text-right font-bold">합산전환</th>
+              <th class="py-2 px-3 text-right font-bold">CPA</th>
+            </tr>
+          </thead>
+          <tbody id="drillDownTableBody" class="divide-y divide-slate-100 dark:divide-slate-700 font-medium"></tbody>
+        </table>
+      </div>
+      <button onclick="closeDrillDownModal()" class="w-full bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-sm transition-colors mt-2">닫기</button>
     </div>
   </div>
 
   <!-- 일반 산출 근거 모달 -->
   <div id="logicModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center modal-overlay p-4">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 modal-content relative">
-      <div class="flex items-center justify-between border-b pb-3">
-        <h3 class="text-base font-bold text-slate-900">📊 데이터 판정 근거</h3>
-        <button onclick="closeLogicModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl leading-none">&times;</button>
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 modal-content relative">
+      <div class="flex items-center justify-between border-b dark:border-slate-700 pb-3">
+        <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">📊 데이터 판정 근거</h3>
+        <button onclick="closeLogicModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold text-xl leading-none">&times;</button>
       </div>
-      <div class="space-y-3 text-xs sm:text-sm text-slate-600 font-medium">
-        <div class="bg-slate-50 p-4 rounded-xl border space-y-3">
-          <p><span class="font-bold text-slate-800 block mb-1">📈 벤치마크 CPA 기준</span> 각 캠페인의 합산 전환 단가 평균을 자동 계산하여 동적 기준선으로 설정합니다.</p>
-          <div class="border-t border-slate-200"></div>
-          <p><span class="font-bold text-emerald-600 block mb-1">👍 증액 추천 뱃지</span> 기준 단가 대비 20% 이상 낮고 전환 볼륨을 충족한 고효율 소재.</p>
-          <div class="border-t border-slate-200"></div>
-          <p><span class="font-bold text-rose-600 block mb-1">🚨 교체 시급 뱃지</span> 기준 CPA 30% 이상 초과 또는 지출 대비 CVR 0 수렴 소재.</p>
+      <div class="space-y-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium">
+        <div class="bg-slate-50 dark:bg-slate-700 p-4 rounded-xl border dark:border-slate-600 space-y-3">
+          <p><span class="font-bold text-slate-800 dark:text-white block mb-1">📈 벤치마크 CPA 기준</span> 각 캠페인의 합산 전환 단가 평균을 자동 계산하여 동적 기준선으로 설정합니다.</p>
+          <div class="border-t border-slate-200 dark:border-slate-600"></div>
+          <p><span class="font-bold text-emerald-600 dark:text-emerald-400 block mb-1">👍 증액 추천 뱃지</span> 기준 단가 대비 20% 이상 낮고 전환 볼륨을 충족한 고효율 소재.</p>
+          <div class="border-t border-slate-200 dark:border-slate-600"></div>
+          <p><span class="font-bold text-rose-600 dark:text-rose-400 block mb-1">🚨 교체 시급 뱃지</span> 기준 CPA 30% 이상 초과 또는 지출 대비 CVR 0 수렴 소재.</p>
         </div>
       </div>
-      <button onclick="closeLogicModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-sm transition-colors mt-2">확인 완료</button>
+      <button onclick="closeLogicModal()" class="w-full bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-sm transition-colors mt-2">확인 완료</button>
     </div>
   </div>
 
-  <!-- 시뮬레이터 전용 산출 근거 모달 -->
+  <!-- 시뮬레이터 산출 근거 모달 -->
   <div id="simLogicModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center modal-overlay p-4">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 modal-content relative">
-      <div class="flex items-center justify-between border-b pb-3">
-        <h3 class="text-base font-bold text-slate-900">🔮 시뮬레이션 산출 근거</h3>
-        <button onclick="closeSimLogicModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl leading-none">&times;</button>
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-4 modal-content relative">
+      <div class="flex items-center justify-between border-b dark:border-slate-700 pb-3">
+        <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">🔮 시뮬레이션 산출 근거</h3>
+        <button onclick="closeSimLogicModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold text-xl leading-none">&times;</button>
       </div>
-      <div class="space-y-3 text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
-        <div class="bg-slate-50 p-4 rounded-xl border space-y-3">
-          <p><span class="font-bold text-purple-600 block mb-1">1. 크로스 시너지 (Halo Effect)</span>판매광고가 견인한 매입 전환 및 매입광고가 견인한 판매 전환의 상호 교차 단가를 분리 추출합니다.</p>
-          <div class="border-t border-slate-200"></div>
-          <p><span class="font-bold text-blue-600 block mb-1">2. 채널별 알고리즘 분리</span>메타와 구글 각 매체의 뚜렷한 전환 성향과 효율 격차를 독립적으로 분리하여 시뮬레이션합니다.</p>
-          <div class="border-t border-slate-200"></div>
-          <p><span class="font-bold text-emerald-600 block mb-1">3. 한계 효용(Diminishing Returns) 적용</span>조회된 기간의 예산 대비 시뮬레이션 예산이 130%를 초과할 경우, 초과분에 비례하여 CPA 효율이 점진적으로 악화(최대 1.5배)되도록 설계된 비선형 페널티가 적용됩니다.</p>
+      <div class="space-y-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
+        <div class="bg-slate-50 dark:bg-slate-700 p-4 rounded-xl border dark:border-slate-600 space-y-3">
+          <p><span class="font-bold text-purple-600 dark:text-purple-400 block mb-1">1. 크로스 시너지 (Halo Effect)</span>판매광고가 견인한 매입 전환 및 매입광고가 견인한 판매 전환의 상호 교차 단가를 분리 추출합니다.</p>
+          <div class="border-t border-slate-200 dark:border-slate-600"></div>
+          <p><span class="font-bold text-blue-600 dark:text-blue-400 block mb-1">2. 채널별 알고리즘 분리</span>메타와 구글 각 매체의 뚜렷한 전환 성향과 효율 격차를 독립적으로 분리하여 시뮬레이션합니다.</p>
+          <div class="border-t border-slate-200 dark:border-slate-600"></div>
+          <p><span class="font-bold text-emerald-600 dark:text-emerald-400 block mb-1">3. 한계 효용(Diminishing Returns) 적용</span>조회된 기간의 예산 대비 시뮬레이션 예산이 130%를 초과할 경우, 초과분에 비례하여 CPA 효율이 점진적으로 악화(최대 1.5배)되도록 설계된 비선형 페널티가 적용됩니다.</p>
         </div>
       </div>
-      <button onclick="closeSimLogicModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-sm transition-colors mt-2">확인</button>
+      <button onclick="closeSimLogicModal()" class="w-full bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-sm transition-colors mt-2">확인</button>
     </div>
   </div>
 
   <!-- 예상 성과 모달 -->
   <div id="expectedModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center modal-overlay p-4">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 modal-content relative">
-      <div class="flex items-center justify-between border-b pb-3">
-        <h3 class="text-base font-bold text-slate-900">🎯 오늘 예상 성과</h3>
-        <button onclick="closeExpectedPerformanceModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl leading-none">&times;</button>
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-4 modal-content relative">
+      <div class="flex items-center justify-between border-b dark:border-slate-700 pb-3">
+        <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">🎯 오늘 예상 성과</h3>
+        <button onclick="closeExpectedPerformanceModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold text-xl leading-none">&times;</button>
       </div>
-      <div class="space-y-3 text-xs sm:text-sm text-slate-600 font-medium">
-        <p class="text-[11px] text-slate-500">최근 7일 일평균 런레이트에 <b class="text-slate-700">오늘의 요일별 전환 가중치(DOW Index)</b>를 반영한 통계적 예측 결과입니다.</p>
-        <div class="bg-slate-50 p-4 rounded-xl border space-y-2.5 mt-2">
-          <div class="flex justify-between items-center"><span class="font-semibold">예상 집행비용:</span><span id="modalExpSpend" class="font-bold text-slate-900">-</span></div>
-          <div class="flex justify-between items-center text-purple-700"><span class="font-semibold">예상 매입(예약):</span><span id="modalExpReg" class="font-bold">-</span></div>
-          <div class="flex justify-between items-center text-blue-700"><span class="font-semibold">예상 판매(구매):</span><span id="modalExpPur" class="font-bold">-</span></div>
-          <div class="border-t border-slate-200 pt-2 mt-1 flex justify-between items-center text-emerald-700"><span class="font-bold">합산 전환:</span><span id="modalExpTotal" class="font-bold text-base">-</span></div>
+      <div class="space-y-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium">
+        <p class="text-[11px] text-slate-500 dark:text-slate-400">최근 7일 일평균 런레이트에 <b class="text-slate-700 dark:text-slate-200">오늘의 요일별 전환 가중치(DOW Index)</b>를 반영한 통계적 예측 결과입니다.</p>
+        <div class="bg-slate-50 dark:bg-slate-700 p-4 rounded-xl border dark:border-slate-600 space-y-2.5 mt-2">
+          <div class="flex justify-between items-center"><span class="font-semibold">예상 집행비용:</span><span id="modalExpSpend" class="font-bold text-slate-900 dark:text-slate-100">-</span></div>
+          <div class="flex justify-between items-center text-purple-700 dark:text-purple-400"><span class="font-semibold">예상 매입(예약):</span><span id="modalExpReg" class="font-bold">-</span></div>
+          <div class="flex justify-between items-center text-blue-700 dark:text-blue-400"><span class="font-semibold">예상 판매(구매):</span><span id="modalExpPur" class="font-bold">-</span></div>
+          <div class="border-t border-slate-200 dark:border-slate-600 pt-2 mt-1 flex justify-between items-center text-emerald-700 dark:text-emerald-400"><span class="font-bold">합산 전환:</span><span id="modalExpTotal" class="font-bold text-base">-</span></div>
         </div>
       </div>
-      <button onclick="closeExpectedPerformanceModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-sm transition-colors mt-2">닫기</button>
+      <button onclick="closeExpectedPerformanceModal()" class="w-full bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-sm transition-colors mt-2">닫기</button>
     </div>
   </div>
 
   <script>
+    // --- UI/Theme/Export Functions ---
+    function toggleDarkMode() {
+      const htmlEl = document.documentElement;
+      htmlEl.classList.toggle('dark');
+      const isDark = htmlEl.classList.contains('dark');
+      document.getElementById('themeIcon').textContent = isDark ? '☀️' : '🌙';
+      if (trendChartInstance) trendChartInstance.update();
+      if (topChartInstance) topChartInstance.update();
+    }
+
+    // 비교 모드 커스텀 토글 UI 업데이트
+    function toggleCompareMode() {
+      const toggleInput = document.getElementById('compareModeToggle');
+      const toggleDiv = toggleInput.nextElementSibling;
+      const container = document.getElementById('compareDateContainer');
+      
+      if(toggleInput.checked) {
+        toggleDiv.style.backgroundColor = '#4f46e5';
+        container.classList.remove('hidden');
+        container.classList.add('flex');
+        syncCompareDates();
+      } else {
+        toggleDiv.style.backgroundColor = '';
+        container.classList.remove('flex');
+        container.classList.add('hidden');
+      }
+      renderDashboard();
+    }
+
+    function exportCSV() {
+      if (!rawDailyData || rawDailyData.length === 0) {
+        alert("내보낼 데이터가 없습니다.");
+        return;
+      }
+      const csv = Papa.unparse(rawDailyData);
+      const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `DA_Report_${new Date().toISOString().slice(0,10)}.csv`;
+      link.click();
+    }
+
+    function exportPDF() {
+      const element = document.getElementById('dashboardContent');
+      const opt = {
+        margin:       5,
+        filename:     `DA_Report_${new Date().toISOString().slice(0,10)}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+      };
+      html2pdf().from(element).set(opt).save();
+    }
+
+    const growthQuotes = [
+      "완벽한 타이밍 기다리다가 영원히 제자리일 것이다", "그냥 해라, 반은 간다 밤을 새워서라도 해내라",
+      "성과는 잔고와 비례한다", "우리는 아무도 범접할 수 없는 부자가 된다", "뒤도 돌아보지말고 앞으로만 가라, 우리에겐 성과뿐이다"
+    ];
+    let quoteIdx = 0;
     document.addEventListener("DOMContentLoaded", () => {
       const expiry = localStorage.getItem('ybh_auth_expiry');
-      if(expiry && Date.now() < parseInt(expiry)) {
-        unlockDashboard();
-      }
+      if(expiry && Date.now() < parseInt(expiry)) unlockDashboard();
+      
+      const tk = document.getElementById('quoteTickerContainer');
+      if (tk) tk.textContent = growthQuotes[0];
+      setInterval(() => {
+        quoteIdx = (quoteIdx + 1) % growthQuotes.length;
+        if (tk) { 
+          tk.style.opacity = 0; 
+          setTimeout(() => { tk.textContent = growthQuotes[quoteIdx]; tk.style.opacity = 1; }, 500); 
+        }
+      }, 4500);
     });
 
     window.toggleSimDrawer = function() {
       const drawer = document.getElementById('simDrawer');
-      if (drawer.classList.contains('translate-x-full')) {
-        drawer.classList.remove('translate-x-full');
-      } else {
-        drawer.classList.add('translate-x-full');
-      }
+      drawer.classList.contains('translate-x-full') ? drawer.classList.remove('translate-x-full') : drawer.classList.add('translate-x-full');
     };
 
     window.openCreativeModal = function(channel, name, urlsStr) {
@@ -419,7 +540,6 @@
       const chEl = document.getElementById('modalCampaignChannel');
       chEl.textContent = channel;
       chEl.className = channel === '메타' ? 'text-[10px] font-bold px-2 py-0.5 rounded mr-1.5 badge-meta' : 'text-[10px] font-bold px-2 py-0.5 rounded mr-1.5 badge-google';
-      
       document.getElementById('modalCampaignName').textContent = name;
       
       const container = document.getElementById('modalCreativeContainer');
@@ -427,22 +547,55 @@
         const idMatch = u.match(/id=([a-zA-Z0-9_-]+)/);
         const thumbUrl = (u.includes('drive.google.com') && idMatch) ? `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w800` : u;
         return `
-          <div class="space-y-1 bg-slate-50 p-2 rounded-xl border border-slate-200 text-center">
-            <span class="text-[10px] font-bold text-slate-500 block">소재 시안 #${idx + 1}</span>
-            <a href="${u}" target="_blank" class="block overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm hover:opacity-90 transition-opacity">
+          <div class="space-y-1 bg-slate-50 dark:bg-slate-700 p-2 rounded-xl border border-slate-200 dark:border-slate-600 text-center">
+            <span class="text-[10px] font-bold text-slate-500 dark:text-slate-300 block">소재 시안 #${idx + 1}</span>
+            <a href="${u}" target="_blank" class="block overflow-hidden rounded-lg border border-slate-200 dark:border-slate-600 bg-white shadow-sm hover:opacity-90 transition-opacity">
               <img src="${thumbUrl}" class="w-full h-40 object-cover bg-slate-100" onerror="this.src='https://via.placeholder.com/300x400?text=Image+Load+Fail'">
             </a>
-            <span class="text-[9px] text-indigo-600 block pt-0.5 font-medium">🔍 클릭시 원본 보기</span>
+            <span class="text-[9px] text-indigo-600 dark:text-indigo-400 block pt-0.5 font-medium">🔍 클릭시 원본 보기</span>
           </div>
         `;
       }).join('');
-
       document.getElementById('creativeModal').classList.add('active');
     };
 
-    window.closeCreativeModal = function() {
-      document.getElementById('creativeModal').classList.remove('active');
-    };
+    window.closeCreativeModal = function() { document.getElementById('creativeModal').classList.remove('active'); };
+    function openLogicModal() { document.getElementById('logicModal').classList.add('active'); }
+    function closeLogicModal() { document.getElementById('logicModal').classList.remove('active'); }
+    function openSimLogicModal() { document.getElementById('simLogicModal').classList.add('active'); }
+    function closeSimLogicModal() { document.getElementById('simLogicModal').classList.remove('active'); }
+    function closeExpectedPerformanceModal() { document.getElementById('expectedModal').classList.remove('active'); }
+    
+    function openExpectedPerformanceModal() { 
+      document.getElementById('expectedModal').classList.add('active'); 
+      calculateExpectedPerformance();
+    }
+
+    function openDrillDownModal(dateStr) {
+      document.getElementById('drillDownTitle').textContent = `${dateStr} 상세 리포트`;
+      const selType = document.getElementById('typeFilter').value;
+      const selCh = document.getElementById('channelFilter').value;
+      
+      const list = rawDailyData.filter(d => 
+        d.date === dateStr && (selType === 'ALL' || d.type === selType) && (selCh === 'ALL' || d.channel === selCh)
+      );
+      
+      const tb = document.getElementById('drillDownTableBody');
+      tb.innerHTML = list.map(d => {
+        const cpa = (d.reg + d.pur) > 0 ? formatCurrency(d.spend / (d.reg + d.pur)) : '-';
+        return `
+          <tr class="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+            <td class="py-2 px-3 sticky-col truncate max-w-[200px]">${d.name}</td>
+            <td class="py-2 px-3 text-right">${d.channel}</td>
+            <td class="py-2 px-3 text-right font-bold">${formatCurrency(d.spend)}</td>
+            <td class="py-2 px-3 text-right text-emerald-600 dark:text-emerald-400 font-bold">${formatNumber(d.reg + d.pur)}</td>
+            <td class="py-2 px-3 text-right">${cpa}</td>
+          </tr>
+        `;
+      }).join('');
+      document.getElementById('drillDownModal').classList.add('active');
+    }
+    function closeDrillDownModal() { document.getElementById('drillDownModal').classList.remove('active'); }
 
     function checkAuth() {
       const rawVal = document.getElementById('pwInput').value;
@@ -460,7 +613,6 @@
       const login = document.getElementById('loginScreen');
       const content = document.getElementById('dashboardContent');
       const body = document.getElementById('mainBody');
-      
       if(login) {
         login.style.opacity = '0';
         setTimeout(() => {
@@ -471,10 +623,9 @@
       }
     }
 
+    // --- Data & Core Constants ---
     const SPREADSHEET_ID = "1pTLAXzXDoxAg_Vhkt8yFxXQ7wF7bT2Q_9t8BdScEnIc";
-    const GID = "1811588047";
     const EXCHANGE_RATE = 1547;
-
     let rawDailyData = [];
     let sortCol = 'spend';
     let sortDesc = true;
@@ -482,43 +633,15 @@
     let topChartInstance = null;
     let simHistoricalData = { baseSpend: 0, salesToPurCPA: 0, salesToRegCPA: 0, purToRegCPA: 0, purToPurCPA: 0 };
     let tableChannelTab = 'ALL';
-    let tableActionTab = 'ALL';
     let simPeriodType = 'ALL'; 
-    let budgetUnit = 'MONTH'; // 예산 집행 단위 ('DAY', 'WEEK', 'MONTH', 'QUARTER')
+    let budgetUnit = 'MONTH';
 
     const BASE_DATA = [
-      ["2026-09-06","매입_전환이벤트 2505_영상","메타",462182,18,0,0,33728,355,"매입"],
-      ["2026-09-06","260331_중고폰매입_PMax","구글",343178,5,0,0,27817,221,"매입"],
-      ["2026-09-06","매입_영상_260518","메타",297674,12,0,0,13759,148,"매입"],
-      ["2026-09-06","판매_전환어드벤티지 아이폰소재","메타",135595,1,7,6558522,12462,158,"판매"]
+      ["2026-09-06","매입_전환이벤트 2505_영상","메타",462182,18,0,0,33728,355,"매입", ""],
+      ["2026-09-06","260331_중고폰매입_PMax","구글",343178,5,0,0,27817,221,"매입", "실적 최대화"],
+      ["2026-09-06","매입_영상_260518","메타",297674,12,0,0,13759,148,"매입", ""],
+      ["2026-09-06","판매_전환어드벤티지 아이폰소재","메타",135595,1,7,6558522,12462,158,"판매", ""]
     ];
-
-    const growthQuotes = [
-      "완벽한 타이밍 기다리다가 영원히 제자리일 것이다", "그냥 해라, 반은 간다 밤을 새워서라도 해내라",
-      "성과는 잔고와 비례한다", "우리는 아무도 범접할 수 없는 부자가 된다", "뒤도 돌아보지말고 앞으로만 가라, 우리에겐 성과뿐이다"
-    ];
-    let quoteIdx = 0;
-    document.addEventListener("DOMContentLoaded", () => {
-      const tk = document.getElementById('quoteTickerContainer');
-      if (tk) tk.textContent = growthQuotes[0];
-      setInterval(() => {
-        quoteIdx = (quoteIdx + 1) % growthQuotes.length;
-        if (tk) { 
-          tk.style.opacity = 0; 
-          setTimeout(() => { tk.textContent = growthQuotes[quoteIdx]; tk.style.opacity = 1; }, 500); 
-        }
-      }, 4500);
-    });
-
-    function openLogicModal() { document.getElementById('logicModal').classList.add('active'); }
-    function closeLogicModal() { document.getElementById('logicModal').classList.remove('active'); }
-    function openSimLogicModal() { document.getElementById('simLogicModal').classList.add('active'); }
-    function closeSimLogicModal() { document.getElementById('simLogicModal').classList.remove('active'); }
-    function openExpectedPerformanceModal() { 
-      document.getElementById('expectedModal').classList.add('active'); 
-      calculateExpectedPerformance();
-    }
-    function closeExpectedPerformanceModal() { document.getElementById('expectedModal').classList.remove('active'); }
 
     function normalizeDate(dateStr) {
       if (!dateStr) return '';
@@ -526,11 +649,36 @@
       if (p.length >= 3) return `${p[0]}-${p[1].padStart(2, '0')}-${p[2].padStart(2, '0')}`.substring(0, 10);
       return '';
     }
-
     function getDOW(dateStr) {
       const parts = dateStr.split('-');
       if(parts.length < 3) return 0;
       return new Date(parts[0], parts[1]-1, parts[2]).getDay();
+    }
+    
+    function offsetDate(dateStr, days) {
+      if(!dateStr) return '';
+      const d = new Date(dateStr);
+      d.setDate(d.getDate() + days);
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    
+    function getDiffDays(start, end) {
+      const s = new Date(start);
+      const e = new Date(end);
+      return Math.round((e-s)/(1000*60*60*24));
+    }
+
+    function formatCurrency(num) { return (num === null || isNaN(num) || num === Infinity || num === 0) ? '-' : '₩' + Math.round(num).toLocaleString(); }
+    function formatNumber(num) { return (num === null || isNaN(num) || num === 0) ? '0' : Math.round(num).toLocaleString(); }
+    function formatSimBudget(inputEl) {
+      let val = inputEl.value.replace(/,/g, '').replace(/[^0-9]/g, '');
+      if(val === '') val = '0';
+      inputEl.value = Number(val).toLocaleString();
+      updateSimulation();
+    }
+    function getSimBudget() {
+      const el = document.getElementById('simTotalBudget');
+      return el ? (Number(el.value.replace(/,/g, '')) || 0) : 0;
     }
 
     function updateStatusBadge(text, isSuccess) {
@@ -538,43 +686,36 @@
       if(badge) {
         badge.textContent = text;
         badge.className = isSuccess 
-          ? "bg-emerald-50 text-emerald-700 text-[10px] sm:text-xs px-2 py-0.5 rounded font-medium border border-emerald-200"
-          : "bg-amber-50 text-amber-700 text-[10px] sm:text-xs px-2 py-0.5 rounded font-medium border border-amber-200";
+          ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] sm:text-xs px-2 py-0.5 rounded font-medium border border-emerald-200 dark:border-emerald-800"
+          : "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] sm:text-xs px-2 py-0.5 rounded font-medium border border-amber-200 dark:border-amber-800";
       }
-    }
-
-    function formatCurrency(num) { return (num === null || isNaN(num) || num === Infinity || num === 0) ? '-' : '₩' + Math.round(num).toLocaleString(); }
-    function formatNumber(num) { return (num === null || isNaN(num) || num === 0) ? '0' : Math.round(num).toLocaleString(); }
-    
-    function formatSimBudget(inputEl) {
-      let val = inputEl.value.replace(/,/g, '').replace(/[^0-9]/g, '');
-      if(val === '') val = '0';
-      inputEl.value = Number(val).toLocaleString();
-      updateSimulation();
-    }
-    
-    function getSimBudget() {
-      const el = document.getElementById('simTotalBudget');
-      return el ? (Number(el.value.replace(/,/g, '')) || 0) : 0;
     }
 
     function clearQuickDateButtons() {
       ['btn-yesterday', 'btn-lastWeek', 'btn-lastMonth'].forEach(id => {
         const el = document.getElementById(id);
-        if(el) el.className = "bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold py-1.5 px-2.5 rounded-lg transition-colors border border-slate-200";
+        if(el) el.className = "bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-[11px] font-bold py-1.5 px-2.5 rounded-lg transition-colors border border-slate-200 dark:border-slate-600";
       });
+    }
+
+    function syncCompareDates() {
+      const startStr = document.getElementById('customStartDate').value;
+      const endStr = document.getElementById('customEndDate').value;
+      if(startStr && endStr) {
+        const diffDays = getDiffDays(startStr, endStr) + 1;
+        document.getElementById('compareStartDate').value = offsetDate(startStr, -diffDays);
+        document.getElementById('compareEndDate').value = offsetDate(endStr, -diffDays);
+      }
     }
 
     function setQuickDate(type) {
       clearQuickDateButtons();
       const activeBtn = document.getElementById('btn-' + type);
       if(activeBtn) {
-        activeBtn.className = "bg-white text-indigo-700 text-[11px] font-bold py-1.5 px-2.5 rounded-lg transition-colors border border-indigo-600 shadow-sm";
+        activeBtn.className = "bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-400 text-[11px] font-bold py-1.5 px-2.5 rounded-lg transition-colors border border-indigo-600 shadow-sm";
       }
-
       const today = new Date();
       let start, end;
-
       if (type === 'yesterday') {
         start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
         end = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
@@ -586,26 +727,49 @@
         start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         end = new Date(today.getFullYear(), today.getMonth(), 0);
       }
-
-      const fmt = (d) => {
-        const yy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        return `${yy}-${mm}-${dd}`;
-      };
-
+      const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      
       document.getElementById('customStartDate').value = fmt(start);
       document.getElementById('customEndDate').value = fmt(end);
+      syncCompareDates();
       renderDashboard();
     }
 
+    // 매체 선택 시 동기화 함수
+    function syncChannelFilter(val) {
+      tableChannelTab = val;
+      updateTableChannelTabButtons(val);
+      updateCampaignTypeDropdownVisibility(val);
+      renderDashboard();
+    }
+
+    function updateTableChannelTabButtons(ch) {
+      ['ALL', '메타', '구글'].forEach(c => {
+        const btn = document.getElementById(c === 'ALL' ? 'tTabAll' : (c === '메타' ? 'tTabMeta' : 'tTabGoogle'));
+        if (btn) btn.className = c === ch ? "px-2.5 sm:px-3 py-1 rounded-md font-bold bg-white text-slate-900 shadow-sm transition-all" : "px-2.5 sm:px-3 py-1 rounded-md font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all";
+      });
+    }
+
+    function updateCampaignTypeDropdownVisibility(ch) {
+      const wrapper = document.getElementById('campaignTypeFilterWrapper');
+      const campTypeEl = document.getElementById('campaignTypeFilter');
+      if (!wrapper || !campTypeEl) return;
+
+      // Meta 선택 시 캠페인 유형 드롭다운 숨김
+      if (ch === '메타') {
+        wrapper.classList.add('hidden');
+        campTypeEl.value = 'ALL';
+      } else {
+        wrapper.classList.remove('hidden');
+      }
+    }
+
+    // --- Google Sheets Data Processing ---
     function processDualColumnSheet(rows) {
       const parsed = [];
       if (!rows || rows.length < 2) return;
 
-      let metaMap = null;
-      let googleMap = null;
-      let globalUrlIndices = {};
+      let metaMap = null; let googleMap = null; let globalUrlIndices = {};
 
       for (let r = 0; r < Math.min(rows.length, 10); r++) {
         const row = rows[r];
@@ -625,6 +789,7 @@
             if (h.includes('전환값')) metaMap.rev = idx;
 
             if (h === '캠페인') googleMap.name = idx;
+            if (h === '캠페인 유형' && googleMap.campaignType === undefined) googleMap.campaignType = idx;
             if ((h === '일' || h === 'Day' || h === '날짜') && metaMap.date !== undefined && idx > metaMap.date) googleMap.date = idx;
             if (h === '노출수') googleMap.imp = idx;
             if (h === '클릭수') googleMap.clicks = idx;
@@ -671,7 +836,7 @@
             const isSale = mName.includes('판매') || mName.includes('구입');
             const type = isBuy ? '매입' : (isSale ? '판매' : '혼합');
 
-            parsed.push({ date: mDate, name: mName, channel: '메타', spend: spendKrw, reg: reg, pur: pur, rev: revKrw, imp: imp, clicks: clicks, type: type, urls: urls });
+            parsed.push({ date: mDate, name: mName, channel: '메타', campaignType: '', spend: spendKrw, reg: reg, pur: pur, rev: revKrw, imp: imp, clicks: clicks, type: type, urls: urls });
           }
         }
 
@@ -679,6 +844,7 @@
           const gDate = normalizeDate(row[googleMap.date]);
           const gName = String(row[googleMap.name] || '').trim();
           if (gDate && gName && gName !== '캠페인' && !gName.includes('총계')) {
+            const campType = googleMap.campaignType !== undefined ? String(row[googleMap.campaignType] || '').trim() : '';
             const spendKrw = parseInt(String(row[googleMap.spend] || '0').replace(/,/g, '')) || 0;
             const imp = parseInt(String(row[googleMap.imp] || '0').replace(/,/g, '')) || 0;
             const clicks = parseInt(String(row[googleMap.clicks] || '0').replace(/,/g, '')) || 0;
@@ -691,7 +857,6 @@
                 if (m && resMap[m[1].trim()] !== undefined) resMap[m[1].trim()] = parseFloat(m[2]);
               });
             }
-
             const reg = resMap['예약'] || 0;
             const pur = resMap['구매하기'] || 0;
 
@@ -706,21 +871,30 @@
             const isSale = gName.includes('판매') || gName.includes('구입');
             const type = isBuy ? '매입' : (isSale ? '판매' : '혼합');
 
-            parsed.push({ date: gDate, name: gName, channel: '구글', spend: spendKrw, reg: reg, pur: pur, rev: revKrw, imp: imp, clicks: clicks, type: type, urls: [] });
+            parsed.push({ date: gDate, name: gName, channel: '구글', campaignType: campType, spend: spendKrw, reg: reg, pur: pur, rev: revKrw, imp: imp, clicks: clicks, type: type, urls: [] });
           }
         }
       });
 
       rawDailyData = parsed;
-      
+
+      // 구글 캠페인 유형 추출하여 필터 드롭다운 옵션 구성
+      const uniqueCampTypes = [...new Set(parsed.filter(d => d.channel === '구글' && d.campaignType !== '').map(d => d.campaignType))].sort();
+      const campTypeSelect = document.getElementById('campaignTypeFilter');
+      if (campTypeSelect) {
+        const currentVal = campTypeSelect.value;
+        campTypeSelect.innerHTML = '<option value="ALL">전체 캠페인 유형</option>' + uniqueCampTypes.map(t => `<option value="${t}">${t}</option>`).join('');
+        if(uniqueCampTypes.includes(currentVal)) campTypeSelect.value = currentVal;
+      }
+
       if (rawDailyData.length > 0) {
         const dates = [...new Set(rawDailyData.map(d => d.date))].sort();
         const startEl = document.getElementById('customStartDate');
         const endEl = document.getElementById('customEndDate');
         if (endEl && !endEl.value) endEl.value = dates[dates.length - 1];
         if (startEl && !startEl.value) startEl.value = dates[Math.max(0, dates.length - 7)];
+        syncCompareDates();
       }
-
       renderDashboard();
     }
 
@@ -751,16 +925,17 @@
 
     function loadFallbackData() {
       rawDailyData = BASE_DATA.map(item => {
-        return { date: item[0], name: item[1], channel: item[2], spend: item[3], reg: item[4], pur: item[5], rev: item[6], imp: item[7], clicks: item[8], type: item[9], urls: [] };
+        return { date: item[0], name: item[1], channel: item[2], spend: item[3], reg: item[4], pur: item[5], rev: item[6], imp: item[7], clicks: item[8], type: item[9], campaignType: item[10], urls: [] };
       });
       const startEl = document.getElementById('customStartDate');
       const endEl = document.getElementById('customEndDate');
       if(endEl) endEl.value = "2026-09-06";
       if(startEl) startEl.value = "2026-09-01";
+      syncCompareDates();
       renderDashboard();
     }
 
-    // 산출 기준 기간 (모수) 버튼 제어
+    // --- Simulator Logic ---
     window.setSimPeriodType = function(type) {
       simPeriodType = type;
       ['ALL', 'QUARTER', 'LAST_MONTH', 'LAST_WEEK'].forEach(t => {
@@ -776,7 +951,6 @@
       triggerSimUpdate();
     };
 
-    // 예산 집행 단위 버튼 제어 (하루, 한주, 한달, 분기)
     window.setBudgetUnit = function(unit) {
       budgetUnit = unit;
       ['DAY', 'WEEK', 'MONTH', 'QUARTER'].forEach(u => {
@@ -789,14 +963,11 @@
           }
         }
       });
-
-      // 결과 카드 라벨 실시간 갱신
       const unitTextMap = { 'DAY': '하루', 'WEEK': '한주', 'MONTH': '한달', 'QUARTER': '분기' };
       const txt = unitTextMap[unit];
       document.getElementById('labelExpPur').textContent = `예상 판매(구매) 전환 (${txt})`;
       document.getElementById('labelExpReg').textContent = `예상 매입(예약) 전환 (${txt})`;
       document.getElementById('labelExpTotal').textContent = `합산 전환 합계 (${txt})`;
-
       updateSimulation();
     };
 
@@ -806,10 +977,8 @@
         if (lbl) lbl.textContent = `적용 모수: 로우 전체 기준`;
         return true;
       }
-
       const today = new Date();
       let start, end;
-
       if (simPeriodType === 'LAST_WEEK') {
         const day = today.getDay() || 7; 
         start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - day - 6);
@@ -824,33 +993,22 @@
         start = new Date(year, prevQuarter * 3, 1);
         end = new Date(year, prevQuarter * 3 + 3, 0);
       }
-
       const fmt = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
       const sStr = fmt(start);
       const eStr = fmt(end);
-
       const lbl = document.getElementById('simPeriodLabel');
       if (lbl) lbl.textContent = `적용 모수: ${sStr.substring(5)} ~ ${eStr.substring(5)}`;
-
       return d.date >= sStr && d.date <= eStr;
     }
 
     function triggerSimUpdate() {
       const selType = document.getElementById('typeFilter').value;
       const simCh = document.getElementById('simChannelFilter').value;
-
       const f = d => {
         let passCh = (simCh === 'ALL') || (d.channel === simCh);
         return (selType === 'ALL' || d.type === selType) && passCh && checkSimDateMatch(d);
       };
       calculateSimulatorEfficiency(f);
-    }
-
-    function checkDateMatch(d) {
-      const start = document.getElementById('customStartDate').value;
-      const end = document.getElementById('customEndDate').value;
-      if (!start || !end) return true;
-      return d.date >= start && d.date <= end;
     }
 
     function calculateSimulatorEfficiency(filterFn) {
@@ -893,7 +1051,6 @@
       if(txtSales) txtSales.textContent = formatCurrency(salesBudget);
       if(txtPur) txtPur.textContent = formatCurrency(purBudget);
 
-      // 예산 집행 단위 배수 적용 (하루: x1, 한주: x7, 한달: x30, 분기: x90)
       let unitMultiplier = 1;
       if (budgetUnit === 'DAY') unitMultiplier = 1;
       else if (budgetUnit === 'WEEK') unitMultiplier = 7;
@@ -948,42 +1105,9 @@
       if(detPurEl) detPurEl.innerHTML = `매입직접: <b class="text-slate-200">${formatNumber(expRegFromPur)}</b>건<br><span class="text-purple-500">+판매시너지: <b>${formatNumber(expRegFromSales)}</b>건</span>`;
     }
 
-    function aggregateData(filterFn) {
-      const targetList = rawDailyData.filter(filterFn);
-      const map = {}; let tSpend = 0, tReg = 0, tPur = 0, tRev = 0, tClicks = 0;
-
-      targetList.forEach(d => {
-        tSpend += d.spend; tReg += d.reg; tPur += d.pur; tRev += d.rev; tClicks += d.clicks;
-        const key = `${d.channel}_${d.name}`;
-        if (!map[key]) {
-          map[key] = { name: d.name, channel: d.channel, spend: 0, reg: 0, pur: 0, rev: 0, clicks: 0, urls: [...(d.urls || [])] };
-        } else {
-          if (map[key].urls.length === 0 && d.urls && d.urls.length > 0) {
-            map[key].urls = [...d.urls];
-          }
-        }
-        map[key].spend += d.spend; map[key].reg += d.reg; map[key].pur += d.pur; map[key].rev += d.rev; map[key].clicks += d.clicks;
-      });
-
-      const items = Object.keys(map).map(k => {
-        const i = map[k]; const conv = i.reg + i.pur;
-        return {
-          name: i.name, channel: i.channel, spend: i.spend, reg: i.reg, pur: i.pur, clicks: i.clicks, urls: i.urls,
-          total_conv: conv, cpa_reg: i.reg > 0 ? i.spend/i.reg : Infinity, cpa_pur: i.pur > 0 ? i.spend/i.pur : Infinity,
-          cpa_total: conv > 0 ? i.spend/conv : Infinity, cvr: i.clicks > 0 ? (conv / i.clicks) * 100 : 0, roas: i.spend > 0 ? (i.rev/i.spend)*100 : 0
-        };
-      });
-
-      return {
-        summary: { spend: tSpend, reg: tReg, pur: tPur, total_conv: tReg + tPur, cpa_reg: tReg > 0 ? tSpend/tReg : 0, cpa_pur: tPur > 0 ? tSpend/tPur : 0, cpa_total: (tReg + tPur) > 0 ? tSpend/(tReg + tPur) : 0, roas: tSpend > 0 ? (tRev/tSpend)*100 : 0 },
-        itemsMap: map, itemsList: items
-      };
-    }
-
     function calculateExpectedPerformance() {
       if (!rawDailyData || rawDailyData.length === 0) return;
       const todayDOW = new Date().getDay();
-
       const uniqueDates = [...new Set(rawDailyData.map(d => d.date))];
       let totalSp = 0, totalReg = 0, totalPur = 0;
       rawDailyData.forEach(d => { totalSp += d.spend; totalReg += d.reg; totalPur += d.pur; });
@@ -1024,77 +1148,125 @@
       if(mTotal) mTotal.textContent = formatNumber(finalReg + finalPur) + '건';
     }
 
-    function setTableChannelTab(ch) {
-      tableChannelTab = ch;
-      ['ALL', '메타', '구글'].forEach(c => {
-        const btn = document.getElementById(c === 'ALL' ? 'tTabAll' : (c === '메타' ? 'tTabMeta' : 'tTabGoogle'));
-        if (btn) {
-          if (c === ch) {
-            btn.className = "px-2.5 sm:px-3 py-1 rounded-md font-bold bg-white text-slate-900 shadow-sm transition-all";
-          } else {
-            btn.className = "px-2.5 sm:px-3 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900 transition-all";
-          }
-        }
-      });
-      renderDashboard();
-    }
+    // --- Core Rendering Logic ---
+    function aggregateData(filterFn) {
+      const targetList = rawDailyData.filter(filterFn);
+      const map = {}; let tSpend = 0, tReg = 0, tPur = 0, tRev = 0, tClicks = 0;
 
-    function setTableActionFilter(act) {
-      tableActionTab = act;
-      ['ALL', 'UP', 'DOWN'].forEach(a => {
-        const btn = document.getElementById(a === 'ALL' ? 'tActAll' : (a === 'UP' ? 'tActUp' : 'tActDown'));
-        if (btn) {
-          if (a === act) {
-            btn.className = `px-2 py-1 rounded-md font-bold bg-white shadow-sm transition-all ${a==='UP'?'text-emerald-700':(a==='DOWN'?'text-rose-700':'text-slate-900')}`;
-          } else {
-            btn.className = `px-2 py-1 rounded-md font-medium transition-all ${a==='UP'?'text-emerald-700 hover:bg-emerald-50':(a==='DOWN'?'text-rose-700 hover:bg-rose-50':'text-slate-600 hover:bg-slate-100')}`;
-          }
+      targetList.forEach(d => {
+        tSpend += d.spend; tReg += d.reg; tPur += d.pur; tRev += d.rev; tClicks += d.clicks;
+        const key = `${d.channel}_${d.name}`;
+        if (!map[key]) {
+          map[key] = { name: d.name, channel: d.channel, campaignType: d.campaignType, spend: 0, reg: 0, pur: 0, rev: 0, clicks: 0, urls: [...(d.urls || [])] };
+        } else {
+          if (map[key].urls.length === 0 && d.urls && d.urls.length > 0) map[key].urls = [...d.urls];
         }
+        map[key].spend += d.spend; map[key].reg += d.reg; map[key].pur += d.pur; map[key].rev += d.rev; map[key].clicks += d.clicks;
       });
-      renderDashboard();
+
+      const items = Object.keys(map).map(k => {
+        const i = map[k]; const conv = i.reg + i.pur;
+        return {
+          name: i.name, channel: i.channel, campaignType: i.campaignType, spend: i.spend, reg: i.reg, pur: i.pur, clicks: i.clicks, rev: i.rev, urls: i.urls,
+          total_conv: conv, cpa_reg: i.reg > 0 ? i.spend/i.reg : Infinity, cpa_pur: i.pur > 0 ? i.spend/i.pur : Infinity,
+          cpa_total: conv > 0 ? i.spend/conv : Infinity, cvr: i.clicks > 0 ? (conv / i.clicks) * 100 : 0, roas: i.spend > 0 ? (i.rev/i.spend)*100 : 0
+        };
+      });
+
+      return {
+        summary: { spend: tSpend, reg: tReg, pur: tPur, total_conv: tReg + tPur, cpa_reg: tReg > 0 ? tSpend/tReg : 0, cpa_pur: tPur > 0 ? tSpend/tPur : 0, cpa_total: (tReg + tPur) > 0 ? tSpend/(tReg + tPur) : 0, roas: tSpend > 0 ? (tRev/tSpend)*100 : 0 },
+        itemsMap: map, itemsList: items
+      };
     }
 
     function renderDashboard() {
       if (rawDailyData.length === 0) return;
+      
+      const isCompareMode = document.getElementById('compareModeToggle')?.checked || false;
       const typeEl = document.getElementById('typeFilter');
       const chEl = document.getElementById('channelFilter');
-      if(!typeEl || !chEl) return;
+      const campTypeEl = document.getElementById('campaignTypeFilter');
+      if(!typeEl || !chEl || !campTypeEl) return;
 
       const selType = typeEl.value;
       const selCh = chEl.value;
+      const selCampType = campTypeEl.value;
+      const startStr = document.getElementById('customStartDate').value;
+      const endStr = document.getElementById('customEndDate').value;
+      
+      // 현재 기간 데이터 필터링
+      const f_curr = d => 
+        (selType === 'ALL' || d.type === selType) && 
+        (selCh === 'ALL' || d.channel === selCh) && 
+        (selCampType === 'ALL' || d.campaignType === selCampType) && 
+        (!startStr || !endStr || (d.date >= startStr && d.date <= endStr));
+        
+      const curr = aggregateData(f_curr); 
+      
+      // 비교 기간 데이터 도출
+      let prev = null;
+      let prevStartStr = '', prevEndStr = '';
+      let defaultCompareText = '';
+      
+      if (isCompareMode) {
+        prevStartStr = document.getElementById('compareStartDate').value;
+        prevEndStr = document.getElementById('compareEndDate').value;
+        
+        if((!prevStartStr || !prevEndStr) && startStr && endStr) {
+          const diffDays = getDiffDays(startStr, endStr) + 1;
+          prevStartStr = offsetDate(startStr, -diffDays);
+          prevEndStr = offsetDate(endStr, -diffDays);
+          document.getElementById('compareStartDate').value = prevStartStr;
+          document.getElementById('compareEndDate').value = prevEndStr;
+        }
 
-      const f = d => (selType === 'ALL' || d.type === selType) && (selCh === 'ALL' || d.channel === selCh) && checkDateMatch(d);
-      
-      const curr = aggregateData(f); 
-      
-      const startEl = document.getElementById('customStartDate');
-      const endEl = document.getElementById('customEndDate');
-      const periodLabelStr = `${startEl ? startEl.value : ''} ~ ${endEl ? endEl.value : ''}`;
+        if(prevStartStr && prevEndStr) {
+          const diffDays = getDiffDays(prevStartStr, prevEndStr) + 1;
+          if (diffDays === 1) defaultCompareText = 'DoD(전일)';
+          else if (diffDays === 7) defaultCompareText = 'WoW(전주)';
+          else if (diffDays >= 28 && diffDays <= 31) defaultCompareText = 'MoM(전월)';
+          else defaultCompareText = `직전 동기간(${diffDays}일)`;
+        }
+
+      } else {
+        if(startStr && endStr) {
+          const diffDays = getDiffDays(startStr, endStr) + 1;
+          prevStartStr = offsetDate(startStr, -diffDays);
+          prevEndStr = offsetDate(endStr, -diffDays);
+
+          if (diffDays === 1) defaultCompareText = 'DoD(전일)';
+          else if (diffDays === 7) defaultCompareText = 'WoW(전주)';
+          else if (diffDays >= 28 && diffDays <= 31) defaultCompareText = 'MoM(전월)';
+          else defaultCompareText = `직전 동기간(${diffDays}일)`;
+        }
+      }
+
+      if(prevStartStr && prevEndStr) {
+        const f_prev = d => 
+          (selType === 'ALL' || d.type === selType) && 
+          (selCh === 'ALL' || d.channel === selCh) && 
+          (selCampType === 'ALL' || d.campaignType === selCampType) && 
+          (d.date >= prevStartStr && d.date <= prevEndStr);
+          
+        prev = aggregateData(f_prev);
+      }
+
+      let periodLabelStr = `${startStr} ~ ${endStr}`;
+      if(isCompareMode) periodLabelStr += ` (비교: ${prevStartStr.substring(5)} ~ ${prevEndStr.substring(5)} / ${defaultCompareText})`;
+      else periodLabelStr += ` (${defaultCompareText} 자동 비교 중)`;
 
       renderHeaderBriefing(curr.summary, curr.itemsList, periodLabelStr);
-      renderKpis(curr.summary, curr.itemsList);
-      
+      renderKpis(curr.summary, curr.itemsList, prev?.summary);
       triggerSimUpdate();
-
-      renderTrendChart(selType, selCh); 
+      
+      renderTrendChart(selType, selCh, selCampType, isCompareMode, startStr, endStr, prevStartStr, prevEndStr); 
       renderTopChart(curr.itemsList);
       
       let tableList = curr.itemsList;
-      if (tableChannelTab !== 'ALL') {
-        tableList = tableList.filter(item => item.channel === tableChannelTab);
-      }
+      if (tableChannelTab !== 'ALL') tableList = tableList.filter(item => item.channel === tableChannelTab);
 
-      const validCpas = curr.itemsList.filter(i => i.cpa_total !== Infinity && i.total_conv > 0).map(i => i.cpa_total);
-      const benchmarkCpa = validCpas.length > 0 ? validCpas.reduce((a,b)=>a+b, 0) / validCpas.length : 45000;
-
-      if (tableActionTab === 'UP') {
-        tableList = tableList.filter(c => c.total_conv > 0 && c.cpa_total <= benchmarkCpa * 0.8);
-      } else if (tableActionTab === 'DOWN') {
-        tableList = tableList.filter(c => (c.total_conv === 0 && c.spend > 50000) || c.cpa_total > benchmarkCpa * 1.3);
-      }
-
-      renderTable(tableList);
-      renderMobileCards(tableList);
+      renderTable(tableList, prev?.itemsMap);
+      renderMobileCards(tableList, prev?.itemsMap);
     }
 
     function renderHeaderBriefing(summary, itemsList, periodVal) {
@@ -1119,67 +1291,124 @@
       if(scaleDown) scaleDown.innerHTML = worsts.length ? worsts.map(w => `• <b>[${w.channel}] ${w.name}</b> 👉 감액 및 교체`).join('<br>') : '위험 캠페인 없음';
     }
 
-    function renderKpis(curr, itemsList) {
+    function renderKpis(curr, itemsList, prevSummary) {
+      const getDeltaHtml = (currVal, prevVal) => {
+        if (!prevSummary || prevVal === 0) return '';
+        const diff = currVal - prevVal;
+        if (diff === 0) return `<span class="text-[10px] text-slate-400 ml-2 font-medium">(-)</span>`;
+        
+        const pct = Math.abs((diff / prevVal) * 100).toFixed(0);
+        const arrow = diff > 0 ? '▲' : '▼';
+        // 상승(diff>0)=파란색, 하락(diff<0)=빨간색
+        const colorClass = diff > 0 
+          ? 'text-blue-600 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-900/30' 
+          : 'text-rose-600 bg-rose-50 border-rose-200 dark:text-rose-400 dark:bg-rose-900/30';
+        
+        return `<span class="${colorClass} text-[10px] ml-1.5 px-1.5 py-0.5 rounded border font-bold">${arrow} ${pct}%</span>`;
+      };
+
       const validCpas = itemsList.filter(i => i.cpa_total !== Infinity && i.total_conv > 0).map(i => i.cpa_total);
       const avgCpa = validCpas.length > 0 ? validCpas.reduce((a,b)=>a+b, 0) / validCpas.length : 45000;
       let totalSpendBadge = (curr.cpa_total > avgCpa * 1.2 && curr.total_conv > 0) ? '<span class="badge-down">감액 검토</span>' : '<span class="badge-up">증액 추천</span>';
 
       const cards = [
-        { label: '통합 총 비용', val: formatCurrency(curr.spend), b: '', extra: totalSpendBadge },
-        { label: '매입(예약) 전환', val: formatNumber(curr.reg) + '건', b: '' },
-        { label: '판매(구매) 전환', val: formatNumber(curr.pur) + '건', b: '' },
-        { label: '합산 전환 합계', val: formatNumber(curr.total_conv) + '건', b: '' },
-        { label: '평균 매입 CPA', val: curr.reg > 0 ? formatCurrency(curr.cpa_reg) : '-', b: '' },
-        { label: '평균 판매 CPA', val: curr.pur > 0 ? formatCurrency(curr.cpa_pur) : '-', b: '' },
-        { label: '평균 합산 CPA', val: curr.total_conv > 0 ? formatCurrency(curr.cpa_total) : '-', b: '' },
-        { label: '통합 ROAS', val: curr.spend > 0 && curr.roas > 0 ? curr.roas.toFixed(1) + '%' : '-', b: '' }
+        { label: '통합 총 비용', val: formatCurrency(curr.spend), delta: getDeltaHtml(curr.spend, prevSummary?.spend), extra: prevSummary ? '' : totalSpendBadge },
+        { label: '매입(예약) 전환', val: formatNumber(curr.reg) + '건', delta: getDeltaHtml(curr.reg, prevSummary?.reg) },
+        { label: '판매(구매) 전환', val: formatNumber(curr.pur) + '건', delta: getDeltaHtml(curr.pur, prevSummary?.pur) },
+        { label: '합산 전환 합계', val: formatNumber(curr.total_conv) + '건', delta: getDeltaHtml(curr.total_conv, prevSummary?.total_conv) },
+        { label: '평균 매입 CPA', val: curr.reg > 0 ? formatCurrency(curr.cpa_reg) : '-', delta: getDeltaHtml(curr.cpa_reg, prevSummary?.cpa_reg) },
+        { label: '평균 판매 CPA', val: curr.pur > 0 ? formatCurrency(curr.cpa_pur) : '-', delta: getDeltaHtml(curr.cpa_pur, prevSummary?.cpa_pur) },
+        { label: '평균 합산 CPA', val: curr.total_conv > 0 ? formatCurrency(curr.cpa_total) : '-', delta: getDeltaHtml(curr.cpa_total, prevSummary?.cpa_total) },
+        { label: '통합 ROAS', val: curr.spend > 0 && curr.roas > 0 ? curr.roas.toFixed(1) + '%' : '-', delta: getDeltaHtml(curr.roas, prevSummary?.roas) }
       ];
 
       const kpiContainer = document.getElementById('kpiContainer');
       if(kpiContainer) {
         kpiContainer.innerHTML = cards.map(c => `
-          <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-slate-200">
-            <span class="text-[11px] sm:text-xs font-semibold text-slate-400 block">${c.label}</span>
-            <div class="flex items-baseline justify-between mt-1">
-              <div class="text-base sm:text-lg font-bold text-slate-900 truncate">${c.val} ${c.extra || ''}</div><div>${c.b}</div>
+          <div class="bg-white dark:bg-slate-800 p-3 sm:p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+            <span class="text-[11px] sm:text-xs font-semibold text-slate-400 dark:text-slate-500 block">${c.label}</span>
+            <div class="flex items-center mt-1">
+              <div class="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 truncate">${c.val}</div>
+              ${c.delta}
+              ${c.extra || ''}
             </div>
           </div>
         `).join('');
       }
     }
 
-    function renderTrendChart(tFilt, cFilt) {
+    function renderTrendChart(tFilt, cFilt, campFilt, isCompareMode, startStr, endStr, prevStartStr, prevEndStr) {
       if (typeof Chart === 'undefined') return;
-      const map = {}; 
+      const currMap = {};
+      const prevMap = {};
+      
       rawDailyData.forEach(d => {
-        if ((tFilt === 'ALL' || d.type === tFilt) && (cFilt === 'ALL' || d.channel === cFilt)) {
-          const start = document.getElementById('customStartDate').value;
-          const end = document.getElementById('customEndDate').value;
-          if (start && end && (d.date < start || d.date > end)) return;
-
-          let keyVal = d.date;
-          if (!map[keyVal]) map[keyVal] = { spend: 0, conv: 0, label: d.date.substring(5) };
-          map[keyVal].spend += d.spend; map[keyVal].conv += (d.reg + d.pur);
+        if ((tFilt === 'ALL' || d.type === tFilt) && 
+            (cFilt === 'ALL' || d.channel === cFilt) &&
+            (campFilt === 'ALL' || d.campaignType === campFilt)) {
+              
+          if (startStr && endStr && d.date >= startStr && d.date <= endStr) {
+            if (!currMap[d.date]) currMap[d.date] = { spend: 0, conv: 0, label: d.date.substring(5) };
+            currMap[d.date].spend += d.spend; currMap[d.date].conv += (d.reg + d.pur);
+          }
+          if (prevStartStr && prevEndStr && d.date >= prevStartStr && d.date <= prevEndStr) {
+            if (!prevMap[d.date]) prevMap[d.date] = { spend: 0, conv: 0 };
+            prevMap[d.date].spend += d.spend; prevMap[d.date].conv += (d.reg + d.pur);
+          }
         }
       });
-      let keys = Object.keys(map).sort();
-      if (keys.length > 30) keys = keys.slice(-30);
+      
+      let currKeys = Object.keys(currMap).sort();
+      let labels = currKeys.map(k => currMap[k].label);
+      let dataCurrSpend = currKeys.map(k => currMap[k].spend);
+      let dataCurrConv = currKeys.map(k => currMap[k].conv);
+      
+      let dataPrevSpend = [];
+      let dataPrevConv = [];
+      let prevKeys = Object.keys(prevMap).sort();
+      
+      if (currKeys.length > 0) {
+        for(let i=0; i<currKeys.length; i++) {
+          let pKey = prevKeys[i] || null;
+          dataPrevSpend.push(pKey ? prevMap[pKey].spend : 0);
+          dataPrevConv.push(pKey ? prevMap[pKey].conv : 0);
+        }
+      }
 
       const canvas = document.getElementById('trendChart');
       if (!canvas) return;
       if (trendChartInstance) trendChartInstance.destroy();
+      
+      const isDark = document.documentElement.classList.contains('dark');
+      const textColor = isDark ? '#cbd5e1' : '#475569';
+      const gridColor = isDark ? '#334155' : '#e2e8f0';
+
+      Chart.defaults.color = textColor;
       Chart.defaults.font.family = "'Pretendard Variable', 'Pretendard', sans-serif";
       
+      let datasets = [
+        { label: '총 비용', data: dataCurrSpend, backgroundColor: '#3b82f6', yAxisID: 'yS', borderRadius: 3, order: 2 },
+        { label: '합산 전환', type: 'line', data: dataCurrConv, borderColor: '#10b981', yAxisID: 'yC', tension: 0.2, pointRadius: 4, order: 1 },
+        { label: '비교 총 비용', data: dataPrevSpend, backgroundColor: isDark ? 'rgba(51, 65, 85, 0.4)' : 'rgba(226, 232, 240, 0.6)', yAxisID: 'yS', borderRadius: 3, order: 4 },
+        { label: '비교 전환수', type: 'line', data: dataPrevConv, borderColor: isDark ? 'rgba(100, 116, 139, 0.5)' : 'rgba(148, 163, 184, 0.6)', borderDash: [5, 5], yAxisID: 'yC', tension: 0.2, pointRadius: 0, order: 3 }
+      ];
+
       trendChartInstance = new Chart(canvas.getContext('2d'), {
         type: 'bar',
-        data: {
-          labels: keys,
-          datasets: [
-            { label: '총 비용(KRW)', data: keys.map(k => map[k].spend), backgroundColor: '#3b82f6', yAxisID: 'yS', borderRadius: 3 },
-            { label: '합산 전환수', type: 'line', data: keys.map(k => map[k].conv), borderColor: '#10b981', yAxisID: 'yC', tension: 0.2, pointRadius: 2 }
-          ]
-        },
-        options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, scales: { yS: { type: 'linear', position: 'left', ticks: { callback: v => (v/10000).toLocaleString() + '만' } }, yC: { type: 'linear', position: 'right', grid: { drawOnChartArea: false } } } }
+        data: { labels: labels, datasets: datasets },
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          onClick: (e, elements) => {
+            if (elements.length > 0 && currKeys[elements[0].index]) openDrillDownModal(currKeys[elements[0].index]);
+          },
+          scales: { 
+            yS: { type: 'linear', position: 'left', grid: { color: gridColor }, ticks: { callback: v => (v/10000).toLocaleString() + '만' } }, 
+            yC: { type: 'linear', position: 'right', grid: { drawOnChartArea: false } },
+            x: { grid: { color: gridColor } }
+          } 
+        }
       });
     }
 
@@ -1189,6 +1418,9 @@
       const canvas = document.getElementById('topCampaignChart');
       if (!canvas) return;
       if (topChartInstance) topChartInstance.destroy();
+
+      const isDark = document.documentElement.classList.contains('dark');
+      const gridColor = isDark ? '#334155' : '#e2e8f0';
       
       topChartInstance = new Chart(canvas.getContext('2d'), {
         type: 'bar',
@@ -1203,28 +1435,17 @@
           responsive: true, 
           maintainAspectRatio: false, 
           scales: { 
-            yC: { 
-              type: 'linear', 
-              position: 'left', 
-              ticks: { callback: v => '₩' + Math.round(v).toLocaleString() } 
-            }, 
-            yR: { 
-              type: 'linear', 
-              position: 'right', 
-              grid: { drawOnChartArea: false },
-              ticks: { callback: v => v.toFixed(0) + '%' }
-            } 
+            yC: { type: 'linear', position: 'left', grid: { color: gridColor }, ticks: { callback: v => '₩' + Math.round(v).toLocaleString() } }, 
+            yR: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: v => v.toFixed(0) + '%' } },
+            x: { grid: { color: gridColor } }
           },
           plugins: {
             tooltip: {
               callbacks: {
                 label: function(ctx) {
                   let val = ctx.parsed.y;
-                  if (ctx.datasetIndex === 0) {
-                    return ` 평균 합산 CPA: ₩${Math.round(val).toLocaleString()}`;
-                  } else {
-                    return ` ROAS: ${val.toFixed(1)}%`;
-                  }
+                  if (ctx.datasetIndex === 0) return ` 평균 합산 CPA: ₩${Math.round(val).toLocaleString()}`;
+                  else return ` ROAS: ${val.toFixed(1)}%`;
                 }
               }
             }
@@ -1234,15 +1455,32 @@
     }
 
     function handleSort(col) { sortDesc = (sortCol === col) ? !sortDesc : true; sortCol = col; renderDashboard(); }
+    
+    // 테이블 내 매체 버튼 클릭 제어
+    function setTableChannelTab(ch) {
+      tableChannelTab = ch;
+      
+      // 상단 매체 셀렉트박스와도 동기화
+      const chEl = document.getElementById('channelFilter');
+      if (chEl) chEl.value = ch;
+      
+      updateTableChannelTabButtons(ch);
+      updateCampaignTypeDropdownVisibility(ch);
+      renderDashboard();
+    }
 
-    function renderTable(currList) {
+    function renderTable(currList, prevItemsMap) {
       const validCpas = currList.filter(i => i.cpa_total !== Infinity && i.total_conv > 0).map(i => i.cpa_total);
       const benchmarkCpa = validCpas.length > 0 ? validCpas.reduce((a,b)=>a+b, 0) / validCpas.length : 45000;
 
-      let tData = currList.map(c => {
+      let tData = [...currList];
+      let sumSpend = 0, sumReg = 0, sumPur = 0, sumConv = 0, sumClicks = 0, sumRev = 0;
+
+      tData = tData.map(c => {
+        sumSpend += c.spend; sumReg += c.reg; sumPur += c.pur; sumConv += c.total_conv; sumClicks += c.clicks; sumRev += c.rev;
+
         let badgeHtml = '', budgetAction = '';
         const isGoogle = c.channel === '구글';
-
         if (c.total_conv > 0 && c.cpa_total <= benchmarkCpa * 0.8) {
           badgeHtml = `<span class="${isGoogle ? 'badge-thumb-google' : 'badge-thumb-meta'}">👍 최고효율</span>`; budgetAction = '<span class="badge-up">증액</span>';
         } else if ((c.total_conv === 0 && c.spend > 50000) || c.cpa_total > benchmarkCpa * 1.3) {
@@ -1251,11 +1489,30 @@
           badgeHtml = `<span class="${isGoogle ? 'badge-keep-google' : 'badge-keep-meta'}">✋ 유지</span>`; budgetAction = '<span class="text-slate-400 text-[10px] font-semibold">유지</span>';
         }
 
-        return { ...c, customBadge: badgeHtml, budgetAction: budgetAction };
+        let convDeltaHtml = '', cpaDeltaHtml = '';
+        let prevC = prevItemsMap ? prevItemsMap[`${c.channel}_${c.name}`] : null;
+        if(prevC) {
+          let convDiff = c.total_conv - prevC.total_conv;
+          let cpaDiff = (c.cpa_total !== Infinity ? c.cpa_total : 0) - (prevC.cpa_total !== Infinity ? prevC.cpa_total : 0);
+          
+          if (convDiff > 0) convDeltaHtml = `<span class="text-[10px] text-blue-500 dark:text-blue-400 font-bold ml-1">(▲${formatNumber(convDiff)})</span>`;
+          else if (convDiff < 0) convDeltaHtml = `<span class="text-[10px] text-rose-500 dark:text-rose-400 font-bold ml-1">(▼${formatNumber(Math.abs(convDiff))})</span>`;
+          else convDeltaHtml = `<span class="text-[10px] text-slate-400 ml-1">(-)</span>`;
+
+          if (cpaDiff > 0) cpaDeltaHtml = `<span class="text-[10px] text-blue-500 dark:text-blue-400 font-bold ml-1">(▲+${formatCurrency(cpaDiff).replace('₩','')})</span>`;
+          else if (cpaDiff < 0) cpaDeltaHtml = `<span class="text-[10px] text-rose-500 dark:text-rose-400 font-bold ml-1">(▼-${formatCurrency(Math.abs(cpaDiff)).replace('₩','')})</span>`;
+          else cpaDeltaHtml = `<span class="text-[10px] text-slate-400 ml-1">(-)</span>`;
+        } else if (prevItemsMap) {
+          convDeltaHtml = `<span class="text-[10px] text-emerald-500 dark:text-emerald-400 font-bold ml-1">(New)</span>`;
+          cpaDeltaHtml = `<span class="text-[10px] text-emerald-500 dark:text-emerald-400 font-bold ml-1">(New)</span>`;
+        }
+
+        return { ...c, customBadge: badgeHtml, budgetAction: budgetAction, convDeltaHtml, cpaDeltaHtml };
       });
 
       tData.sort((a, b) => {
-        let vA = a[sortCol] === Infinity ? -999999 : a[sortCol]; let vB = b[sortCol] === Infinity ? -999999 : b[sortCol];
+        let vA = a[sortCol] === Infinity ? -999999 : a[sortCol]; 
+        let vB = b[sortCol] === Infinity ? -999999 : b[sortCol];
         if (typeof vA === 'string') return sortDesc ? vB.localeCompare(vA) : vA.localeCompare(vB);
         return sortDesc ? vB - vA : vA - vB;
       });
@@ -1269,47 +1526,105 @@
       tb.innerHTML = '';
       tData.forEach(r => {
         const bCls = r.channel === '메타' ? 'badge-meta' : 'badge-google';
-        
         const urlsStr = r.urls && r.urls.length > 0 ? r.urls.join(',') : '';
         const hasUrl = urlsStr.length > 0;
         const clickAttr = hasUrl ? `onclick="openCreativeModal('${r.channel}', '${r.name.replace(/'/g, "\\'")}', '${urlsStr}')"` : '';
-        const nameStyle = hasUrl 
-          ? 'cursor-pointer text-indigo-600 hover:text-indigo-800 font-bold underline decoration-indigo-300 decoration-dashed underline-offset-4' 
-          : 'text-slate-900';
+        const nameStyle = hasUrl ? 'cursor-pointer text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-bold underline decoration-indigo-300 decoration-dashed underline-offset-4' : 'text-slate-900 dark:text-slate-100';
+        
+        const campTypeBadge = r.campaignType ? `<span class="text-[9px] bg-slate-100 text-slate-500 border border-slate-200 px-1 rounded ml-1 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300 align-text-bottom">${r.campaignType}</span>` : '';
 
-        const tr = document.createElement('tr'); tr.className = 'hover:bg-slate-50 transition-colors';
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors';
         tr.innerHTML = `
           <td class="py-2.5 px-3 sm:px-4 sticky-col truncate max-w-[210px] sm:max-w-none">
             <span class="${bCls}">${r.channel}</span>
             <span class="${nameStyle}" ${clickAttr}>${r.name}</span>
+            ${campTypeBadge}
             ${r.customBadge}
           </td>
-          <td class="py-2.5 px-3 sm:px-4 text-right"><span class="font-bold text-slate-900">${formatCurrency(r.spend)}</span> ${r.budgetAction}</td>
-          <td class="py-2.5 px-3 sm:px-4 text-right bg-purple-50/50"><span class="font-bold text-purple-600">${formatNumber(r.reg)}</span></td>
-          <td class="py-2.5 px-3 sm:px-4 text-right"><span class="font-semibold text-slate-600">${formatCurrency(r.cpa_reg)}</span></td>
-          <td class="py-2.5 px-3 sm:px-4 text-right bg-blue-50/50"><span class="font-bold text-blue-600">${formatNumber(r.pur)}</span></td>
-          <td class="py-2.5 px-3 sm:px-4 text-right"><span class="font-semibold text-slate-600">${formatCurrency(r.cpa_pur)}</span></td>
-          <td class="py-2.5 px-3 sm:px-4 text-right bg-emerald-50/50"><span class="font-bold text-emerald-600">${formatNumber(r.total_conv)}</span></td>
-          <td class="py-2.5 px-3 sm:px-4 text-right"><span class="font-bold text-slate-700">${formatCurrency(r.cpa_total)}</span></td>
-          <td class="py-2.5 px-3 sm:px-4 text-right"><span class="font-bold text-indigo-700">${r.cvr > 0 ? r.cvr.toFixed(2) + '%' : '0.00%'}</span></td>
-          <td class="py-2.5 px-3 sm:px-4 text-right"><span class="font-bold text-slate-700">${r.roas > 0 ? r.roas.toFixed(1) + '%' : '-'}</span></td>
+          <td class="py-2.5 px-3 sm:px-4 text-right"><span class="font-bold text-slate-900 dark:text-slate-100">${formatCurrency(r.spend)}</span></td>
+          <td class="py-2.5 px-3 sm:px-4 text-right bg-purple-50/50 dark:bg-purple-900/10"><span class="font-bold text-purple-600 dark:text-purple-400">${formatNumber(r.reg)}</span></td>
+          <td class="py-2.5 px-3 sm:px-4 text-right"><span class="font-semibold text-slate-600 dark:text-slate-400">${formatCurrency(r.cpa_reg)}</span></td>
+          <td class="py-2.5 px-3 sm:px-4 text-right bg-blue-50/50 dark:bg-blue-900/10"><span class="font-bold text-blue-600 dark:text-blue-400">${formatNumber(r.pur)}</span></td>
+          <td class="py-2.5 px-3 sm:px-4 text-right"><span class="font-semibold text-slate-600 dark:text-slate-400">${formatCurrency(r.cpa_pur)}</span></td>
+          <td class="py-2.5 px-3 sm:px-4 text-right bg-emerald-50/50 dark:bg-emerald-900/10"><span class="font-bold text-emerald-600 dark:text-emerald-400">${formatNumber(r.total_conv)}</span><br>${r.convDeltaHtml}</td>
+          <td class="py-2.5 px-3 sm:px-4 text-right"><span class="font-bold text-slate-700 dark:text-slate-200">${formatCurrency(r.cpa_total)}</span><br>${r.cpaDeltaHtml}</td>
+          <td class="py-2.5 px-3 sm:px-4 text-right"><span class="font-bold text-indigo-700 dark:text-indigo-400">${r.cvr > 0 ? r.cvr.toFixed(2) + '%' : '0.00%'}</span></td>
+          <td class="py-2.5 px-3 sm:px-4 text-right"><span class="font-bold text-slate-700 dark:text-slate-200">${r.roas > 0 ? r.roas.toFixed(1) + '%' : '-'}</span></td>
         `;
         tb.appendChild(tr);
       });
+
+      // 테이블 푸터(합계) 렌더링
+      const tf = document.getElementById('dataTableFoot');
+      if (tf) {
+        const avgCpaReg = sumReg > 0 ? sumSpend / sumReg : 0;
+        const avgCpaPur = sumPur > 0 ? sumSpend / sumPur : 0;
+        const avgCpaTotal = sumConv > 0 ? sumSpend / sumConv : 0;
+        const avgCvr = sumClicks > 0 ? (sumConv / sumClicks) * 100 : 0;
+        const avgRoas = sumSpend > 0 ? (sumRev / sumSpend) * 100 : 0;
+
+        tf.innerHTML = `
+          <tr>
+            <td class="py-3 px-3 sm:px-4 sticky-col font-black text-center text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-800">📊Total(SUM)</td>
+            <td class="py-3 px-3 sm:px-4 text-right font-black text-indigo-700 dark:text-indigo-400">${formatCurrency(sumSpend)}</td>
+            <td class="py-3 px-3 sm:px-4 text-right font-black text-purple-700 dark:text-purple-400">${formatNumber(sumReg)}</td>
+            <td class="py-3 px-3 sm:px-4 text-right font-bold text-slate-700 dark:text-slate-300">${formatCurrency(avgCpaReg)}</td>
+            <td class="py-3 px-3 sm:px-4 text-right font-black text-blue-700 dark:text-blue-400">${formatNumber(sumPur)}</td>
+            <td class="py-3 px-3 sm:px-4 text-right font-bold text-slate-700 dark:text-slate-300">${formatCurrency(avgCpaPur)}</td>
+            <td class="py-3 px-3 sm:px-4 text-right font-black text-emerald-700 dark:text-emerald-400">${formatNumber(sumConv)}</td>
+            <td class="py-3 px-3 sm:px-4 text-right font-black text-rose-600 dark:text-rose-400">${formatCurrency(avgCpaTotal)}</td>
+            <td class="py-3 px-3 sm:px-4 text-right font-bold text-indigo-700 dark:text-indigo-400">${avgCvr > 0 ? avgCvr.toFixed(2) + '%' : '0.00%'}</td>
+            <td class="py-3 px-3 sm:px-4 text-right font-bold text-slate-800 dark:text-slate-200">${avgRoas > 0 ? avgRoas.toFixed(1) + '%' : '-'}</td>
+          </tr>
+        `;
+      }
+      
+      // 모바일용 종합 요약 카드 렌더링
+      const mSummary = document.getElementById('mobileSummaryCard');
+      if (mSummary) {
+        const avgCpaTotal = sumConv > 0 ? sumSpend / sumConv : 0;
+        mSummary.innerHTML = `
+          <div class="bg-indigo-50 dark:bg-slate-800 p-4 rounded-xl border border-indigo-200 dark:border-slate-700 shadow-sm">
+            <div class="flex items-center justify-between border-b border-indigo-100 dark:border-slate-700 pb-2 mb-3">
+              <h3 class="text-xs font-bold text-indigo-800 dark:text-indigo-300">📊 필터 목록 종합 요약</h3>
+            </div>
+            <div class="grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <span class="text-[10px] text-slate-500 dark:text-slate-400 block">총 집행비용</span>
+                <span class="font-bold text-slate-900 dark:text-white">${formatCurrency(sumSpend)}</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-emerald-600 dark:text-emerald-400 block font-semibold">합산 전환 총합</span>
+                <span class="font-bold text-emerald-700 dark:text-emerald-400">${formatNumber(sumConv)}건</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-purple-600 dark:text-purple-400 block">매입(예약) 합계</span>
+                <span class="font-bold text-purple-700 dark:text-purple-400">${formatNumber(sumReg)}건</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-blue-600 dark:text-blue-400 block">판매(구매) 합계</span>
+                <span class="font-bold text-blue-700 dark:text-blue-400">${formatNumber(sumPur)}건</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between pt-3 mt-2 border-t border-indigo-100 dark:border-slate-700 text-xs font-bold">
+              <span class="text-slate-600 dark:text-slate-300">평균 합산 CPA: <span class="text-rose-600 dark:text-rose-400">${formatCurrency(avgCpaTotal)}</span></span>
+            </div>
+          </div>
+        `;
+      }
     }
 
-    function renderMobileCards(currList) {
+    function renderMobileCards(currList, prevItemsMap) {
       const container = document.getElementById('mobileCardContainer');
       if(!container) return;
       container.innerHTML = '';
-
       const validCpas = currList.filter(i => i.cpa_total !== Infinity && i.total_conv > 0).map(i => i.cpa_total);
       const benchmarkCpa = validCpas.length > 0 ? validCpas.reduce((a,b)=>a+b, 0) / validCpas.length : 45000;
 
       currList.forEach(c => {
         let badgeHtml = '', budgetAction = '';
         const isGoogle = c.channel === '구글';
-
         if (c.total_conv > 0 && c.cpa_total <= benchmarkCpa * 0.8) {
           badgeHtml = `<span class="${isGoogle ? 'badge-thumb-google' : 'badge-thumb-meta'}">👍 최고효율</span>`; budgetAction = '<span class="badge-up">증액</span>';
         } else if ((c.total_conv === 0 && c.spend > 50000) || c.cpa_total > benchmarkCpa * 1.3) {
@@ -1318,57 +1633,68 @@
           badgeHtml = `<span class="${isGoogle ? 'badge-keep-google' : 'badge-keep-meta'}">✋ 유지</span>`; budgetAction = '<span class="text-slate-400 text-[10px] font-semibold">유지</span>';
         }
 
+        let convDeltaHtml = '', cpaDeltaHtml = '';
+        let prevC = prevItemsMap ? prevItemsMap[`${c.channel}_${c.name}`] : null;
+        if(prevC) {
+          let convDiff = c.total_conv - prevC.total_conv;
+          let cpaDiff = (c.cpa_total !== Infinity ? c.cpa_total : 0) - (prevC.cpa_total !== Infinity ? prevC.cpa_total : 0);
+          if (convDiff > 0) convDeltaHtml = `<span class="text-[10px] text-blue-500 dark:text-blue-400 font-bold ml-1">(▲${formatNumber(convDiff)})</span>`;
+          else if (convDiff < 0) convDeltaHtml = `<span class="text-[10px] text-rose-500 dark:text-rose-400 font-bold ml-1">(▼${formatNumber(Math.abs(convDiff))})</span>`;
+          if (cpaDiff > 0) cpaDeltaHtml = `<span class="text-[10px] text-blue-500 dark:text-blue-400 font-bold ml-1">(▲+${formatCurrency(cpaDiff).replace('₩','')})</span>`;
+          else if (cpaDiff < 0) cpaDeltaHtml = `<span class="text-[10px] text-rose-500 dark:text-rose-400 font-bold ml-1">(▼-${formatCurrency(Math.abs(cpaDiff)).replace('₩','')})</span>`;
+        } else if (prevItemsMap) {
+          convDeltaHtml = `<span class="text-[10px] text-emerald-500 dark:text-emerald-400 font-bold ml-1">(New)</span>`;
+          cpaDeltaHtml = `<span class="text-[10px] text-emerald-500 dark:text-emerald-400 font-bold ml-1">(New)</span>`;
+        }
+
         const bCls = c.channel === '메타' ? 'badge-meta' : 'badge-google';
-        
         const urlsStr = c.urls && c.urls.length > 0 ? c.urls.join(',') : '';
         const hasUrl = urlsStr.length > 0;
         const clickAttr = hasUrl ? `onclick="openCreativeModal('${c.channel}', '${c.name.replace(/'/g, "\\'")}', '${urlsStr}')"` : '';
-        const nameStyle = hasUrl 
-          ? 'cursor-pointer text-indigo-600 hover:text-indigo-800 font-bold underline decoration-indigo-300 decoration-dashed underline-offset-4' 
-          : 'text-slate-900';
+        const nameStyle = hasUrl ? 'cursor-pointer text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-bold underline decoration-indigo-300 decoration-dashed underline-offset-4' : 'text-slate-900 dark:text-slate-100';
+        const campTypeBadge = c.campaignType ? `<span class="text-[9px] bg-slate-100 text-slate-500 border border-slate-200 px-1 rounded ml-1 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300 align-text-bottom">${c.campaignType}</span>` : '';
 
         const card = document.createElement('div');
-        card.className = "bg-slate-50/80 p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-2.5";
+        card.className = "bg-slate-50/80 dark:bg-slate-700/80 p-3.5 rounded-xl border border-slate-200 dark:border-slate-600 shadow-xs space-y-2.5";
         card.innerHTML = `
-          <div class="flex items-center justify-between border-b border-slate-200/60 pb-2">
+          <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-600/60 pb-2">
             <div class="flex items-center gap-1.5 truncate max-w-[210px]">
               <span class="${bCls}">${c.channel}</span>
               <span class="text-xs truncate ${nameStyle}" ${clickAttr}>${c.name}</span>
             </div>
-            <div>${badgeHtml} ${budgetAction}</div>
+            <div>${badgeHtml}</div>
           </div>
+          <div class="mb-2">${campTypeBadge}</div>
           <div class="grid grid-cols-2 gap-2 text-xs">
-            <div class="bg-white p-2 rounded border border-slate-100">
+            <div class="bg-white dark:bg-slate-800 p-2 rounded border border-slate-100 dark:border-slate-700">
               <span class="text-[10px] text-slate-400 block">총 집행비용</span>
-              <span class="font-bold text-slate-900">${formatCurrency(c.spend)}</span>
+              <span class="font-bold text-slate-900 dark:text-slate-100">${formatCurrency(c.spend)}</span>
             </div>
-            <div class="bg-white p-2 rounded border border-slate-100">
-              <span class="text-[10px] text-emerald-600 block font-semibold">합산 전환수</span>
-              <span class="font-bold text-emerald-600">${formatNumber(c.total_conv)}건</span>
+            <div class="bg-white dark:bg-slate-800 p-2 rounded border border-slate-100 dark:border-slate-700">
+              <span class="text-[10px] text-emerald-600 dark:text-emerald-400 block font-semibold">합산 전환수</span>
+              <span class="font-bold text-emerald-600 dark:text-emerald-400">${formatNumber(c.total_conv)}건</span> ${convDeltaHtml}
             </div>
-            <div class="bg-white p-2 rounded border border-slate-100">
-              <span class="text-[10px] text-purple-600 block">매입(예약) / CPA</span>
-              <span class="font-semibold text-slate-700">${formatNumber(c.reg)}건 (${formatCurrency(c.cpa_reg)})</span>
+            <div class="bg-white dark:bg-slate-800 p-2 rounded border border-slate-100 dark:border-slate-700">
+              <span class="text-[10px] text-purple-600 dark:text-purple-400 block">매입(예약) / CPA</span>
+              <span class="font-semibold text-slate-700 dark:text-slate-300">${formatNumber(c.reg)}건 (${formatCurrency(c.cpa_reg)})</span>
             </div>
-            <div class="bg-white p-2 rounded border border-slate-100">
-              <span class="text-[10px] text-blue-600 block">판매(구매) / CPA</span>
-              <span class="font-semibold text-slate-700">${formatNumber(c.pur)}건 (${formatCurrency(c.cpa_pur)})</span>
+            <div class="bg-white dark:bg-slate-800 p-2 rounded border border-slate-100 dark:border-slate-700">
+              <span class="text-[10px] text-blue-600 dark:text-blue-400 block">판매(구매) / CPA</span>
+              <span class="font-semibold text-slate-700 dark:text-slate-300">${formatNumber(c.pur)}건 (${formatCurrency(c.cpa_pur)})</span>
             </div>
           </div>
-          <div class="flex items-center justify-between pt-1 text-[11px] font-semibold text-slate-600 border-t border-slate-200/40">
-            <span>평균 합산 CPA: <b class="text-slate-900">${formatCurrency(c.cpa_total)}</b></span>
-            <span>ROAS: <b class="text-indigo-600">${c.roas > 0 ? c.roas.toFixed(1) + '%' : '-'}</b></span>
+          <div class="flex items-center justify-between pt-1 text-[11px] font-semibold text-slate-600 dark:text-slate-400 border-t border-slate-200/40 dark:border-slate-600/40">
+            <span>평균 합산 CPA: <b class="text-slate-900 dark:text-slate-100">${formatCurrency(c.cpa_total)}</b> ${cpaDeltaHtml}</span>
+            <span>ROAS: <b class="text-indigo-600 dark:text-indigo-400">${c.roas > 0 ? c.roas.toFixed(1) + '%' : '-'}</b></span>
           </div>
         `;
         container.appendChild(card);
       });
     }
 
-    ['typeFilter', 'channelFilter', 'customStartDate', 'customEndDate'].forEach(id => {
+    ['typeFilter', 'channelFilter'].forEach(id => {
       const el = document.getElementById(id);
-      if(el) {
-        el.addEventListener('change', () => { renderDashboard(); });
-      }
+      if(el) el.addEventListener('change', () => { renderDashboard(); });
     });
 
     async function boot() { fetchAllData(); }
