@@ -39,8 +39,9 @@
     .table-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
     .dark .table-scrollbar::-webkit-scrollbar-thumb { background-color: #475569; }
     
-    .badge-meta { background-color: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: 700; }
-    .badge-google { background-color: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+    /* 무채색 메타데이터 뱃지 통일 */
+    .badge-neutral { background-color: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; display: inline-block; }
+    .dark .badge-neutral { background-color: #334155; color: #cbd5e1; border-color: #475569; }
 
     .badge-status { border-radius: 99px; font-size: 10px; padding: 1px 7px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px; }
     .badge-status-good { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
@@ -158,8 +159,13 @@
       </div>
     </header>
 
-    <!-- 2. 컨트롤러 -->
-    <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+    <!-- 모바일 전용 필터 토글 버튼 -->
+    <button onclick="document.getElementById('controlPanel').classList.toggle('hidden')" class="w-full lg:hidden bg-slate-800 text-white p-3 rounded-xl shadow-sm text-xs font-bold flex justify-center items-center gap-2 hover:bg-slate-700 transition-colors">
+      <span>⚙️ 글로벌 분석 필터 및 기간 설정 (비교모드)</span>
+    </button>
+
+    <!-- 2. 컨트롤러 (글로벌) -->
+    <div id="controlPanel" class="hidden lg:block bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
       <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-700">
         <div class="flex items-center gap-2 flex-wrap">
           <span class="text-xs font-bold text-slate-500 dark:text-slate-400">조회 기간</span>
@@ -191,7 +197,7 @@
       </div>
 
       <div class="flex items-center gap-2 flex-wrap text-xs">
-        <span class="font-bold text-slate-500 dark:text-slate-400 mr-1">분석 세그먼트</span>
+        <span class="font-bold text-slate-500 dark:text-slate-400 mr-1">글로벌 세그먼트</span>
         <select id="channelFilter" class="bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 font-semibold rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-indigo-500" onchange="syncChannelFilter(this.value)">
           <option value="ALL">전체 매체</option>
           <option value="메타">Meta</option>
@@ -260,15 +266,39 @@
       </div>
     </div>
 
-    <!-- 6. 데일리 시트 (1일~말일) -->
+    <!-- 6. 데일리 시트 (1일~말일) : 상단 필터와 완전히 분리 -->
     <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 dark:border-slate-700 pb-3">
-        <div class="flex items-center gap-2">
-          <span class="text-base">📅</span>
-          <h2 class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100">일자별 종합 성과 시트 (1일 ~ 말일)</h2>
+      
+      <!-- 상단 타이틀 및 로컬 필터 영역 -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700 pb-3">
+        <div class="flex flex-col gap-1">
+          <div class="flex items-center gap-2">
+            <span class="text-base">📅</span>
+            <h2 class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100">일자별 종합 성과 시트 (1일 ~ 말일)</h2>
+          </div>
+          <span class="text-[10px] text-slate-400">상단의 글로벌 세그먼트와 무관하게 이 표만의 <strong class="text-indigo-500">독립적인 분석 필터</strong>가 적용됩니다.</span>
         </div>
-        <span class="text-[11px] text-slate-400">미인입 일자는 '-' 표기 및 토/일요일 색상 하이라이트</span>
+
+        <!-- 독립(Local) 분석 세그먼트 필터 -->
+        <div class="flex items-center gap-1.5 flex-wrap text-xs">
+          <select id="dailyChannelFilter" class="bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 font-semibold rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-indigo-500" onchange="syncDailyChannelFilter()">
+            <option value="ALL">전체 매체</option>
+            <option value="메타">Meta</option>
+            <option value="구글">Google</option>
+          </select>
+          <select id="dailyTypeFilter" class="bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 font-semibold rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-indigo-500" onchange="renderDailySheetTable()">
+            <option value="ALL">전체 BM</option>
+            <option value="판매">판매(구매)</option>
+            <option value="매입">매입(예약)</option>
+          </select>
+          <div id="dailyCampaignTypeFilterWrapper" class="inline-block">
+            <select id="dailyCampaignTypeFilter" class="bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 font-semibold rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer" onchange="renderDailySheetTable()">
+              <option value="ALL">전체 캠페인 유형</option>
+            </select>
+          </div>
+        </div>
       </div>
+
       <div class="overflow-x-auto touch-scroll table-scrollbar border border-slate-200 dark:border-slate-700 rounded-lg">
         <table class="w-full text-center text-xs text-slate-700 dark:text-slate-200 whitespace-nowrap min-w-[1200px]">
           <thead class="bg-slate-100 dark:bg-slate-700/60 font-bold border-b border-slate-200 dark:border-slate-600">
@@ -447,7 +477,6 @@
       const parsed = [];
       if (!rows || rows.length < 2) return;
 
-      // 완전 고정 인덱스 (동적 헤더 탐색 삭제)
       const META = { name: 0, date: 1, imp: 2, clicks: 3, spend: 4, reg: 5, pur: 7, rev: 8, url1: 10, url2: 11, url3: 12 };
       const GOOGLE = { name: 14, campaignType: 15, date: 16, imp: 17, clicks: 18, spend: 20, results: 21, rev: 23 };
 
@@ -528,12 +557,22 @@
 
       rawDailyData = parsed;
 
+      // 캠페인 유형 셀렉트 박스 채우기 (글로벌, 로컬 둘다)
       const uniqueCampTypes = [...new Set(parsed.filter(d => d.channel === '구글' && d.campaignType !== '').map(d => d.campaignType))].sort();
       const campTypeSelect = document.getElementById('campaignTypeFilter');
+      const dailyCampTypeSelect = document.getElementById('dailyCampaignTypeFilter');
+      
+      const optionsHtml = '<option value="ALL">전체 캠페인 유형</option>' + uniqueCampTypes.map(t => `<option value="${t}">${t}</option>`).join('');
+
       if (campTypeSelect) {
         const currentVal = campTypeSelect.value;
-        campTypeSelect.innerHTML = '<option value="ALL">전체 캠페인 유형</option>' + uniqueCampTypes.map(t => `<option value="${t}">${t}</option>`).join('');
+        campTypeSelect.innerHTML = optionsHtml;
         if(uniqueCampTypes.includes(currentVal)) campTypeSelect.value = currentVal;
+      }
+      if (dailyCampTypeSelect) {
+        const currentVal = dailyCampTypeSelect.value;
+        dailyCampTypeSelect.innerHTML = optionsHtml;
+        if(uniqueCampTypes.includes(currentVal)) dailyCampTypeSelect.value = currentVal;
       }
 
       if (rawDailyData.length > 0) {
@@ -549,6 +588,22 @@
       }
       renderDashboard();
     }
+
+    // --- 데일리 시트 전용 매체 필터 변경 이벤트 ---
+    function syncDailyChannelFilter() {
+      const ch = document.getElementById('dailyChannelFilter').value;
+      const wrapper = document.getElementById('dailyCampaignTypeFilterWrapper');
+      const typeSelect = document.getElementById('dailyCampaignTypeFilter');
+
+      if (ch === '메타') {
+        wrapper.classList.add('hidden');
+        typeSelect.value = 'ALL';
+      } else {
+        wrapper.classList.remove('hidden');
+      }
+      renderDailySheetTable();
+    }
+
 
     // 유틸
     function toggleDarkMode() {
@@ -965,10 +1020,11 @@
       const isCompareMode = document.getElementById('compareModeToggle')?.checked || false;
       const typeEl = document.getElementById('typeFilter');
       const campTypeEl = document.getElementById('campaignTypeFilter');
-      if(!typeEl || !campTypeEl) return;
+      const chEl = document.getElementById('channelFilter');
+      if(!typeEl || !campTypeEl || !chEl) return;
 
       const selType = typeEl.value;
-      const selCh = tableChannelTab;
+      const selCh = chEl.value;
       const selCampType = campTypeEl.value;
       const startStr = document.getElementById('customStartDate').value;
       const endStr = document.getElementById('customEndDate').value;
@@ -1038,9 +1094,14 @@
       renderTrendChart(selType, selCh, selCampType, isCompareMode, startStr, endStr, prevStartStr, prevEndStr); 
       renderTopChart(curr.itemsList);
       
-      renderDailySheetTable(startStr, selType, selCh, selCampType);
-      renderTable(curr.itemsList, prev?.itemsMap);
-      renderMobileCards(curr.itemsList, prev?.itemsMap);
+      // 일자별 시트는 글로벌 값들과 상관없이 표 내부의 로컬 필터만 적용받음
+      renderDailySheetTable(); 
+      
+      let tableList = curr.itemsList;
+      if (tableChannelTab !== 'ALL') tableList = tableList.filter(item => item.channel === tableChannelTab);
+
+      renderTable(tableList, prev?.itemsMap);
+      renderMobileCards(tableList, prev?.itemsMap);
       renderRawTables(startStr, endStr);
     }
 
@@ -1055,7 +1116,7 @@
       const worsts = validCpas.length > 0 ? [...validItems].sort((a,b) => b.cpa_total - a.cpa_total).slice(0, 2) : [];
 
       let summaryText = `총 집행비용 ${formatCurrency(summary.spend)}으로 전환 ${formatNumber(summary.total_conv)}건을 확보했습니다. (평균 CPA ${formatCurrency(summary.cpa_total)}) `;
-      summaryText += (summary.cpa_total <= benchmarkCpa) ? `효율이 기준선 내에 머물러 있어 안정적입니다.` : `CPA가 다소 상승세에 있어 저효율 캠페인 감액이 권장됩니다.`;
+      summaryText += (summary.cpa_total <= benchmarkCpa) ? `효율이 기준선 내에 머물러 있어 안정적입니다.` : `CPA가 상승세에 있어 저효율 캠페인 감액이 권장됩니다.`;
       
       const sumTxt = document.getElementById('footerSummaryText');
       const scaleUp = document.getElementById('footerScaleUpText');
@@ -1127,32 +1188,46 @@
       }
     }
 
-    function renderDailySheetTable(startStr, selType, selCh, selCampType) {
+    // ★ 수정됨: 글로벌 필터와 무관하게 로컬 필터 값만으로 렌더링
+    function renderDailySheetTable() {
       const tb = document.getElementById('dailyTableBody');
       const tf = document.getElementById('dailyTableFoot');
       if (!tb) return;
 
+      // 기준이 되는 '월'은 글로벌 시작일을 따라감
+      const startStr = document.getElementById('customStartDate').value;
       const baseDate = startStr ? new Date(startStr) : new Date();
       const year = baseDate.getFullYear();
       const month = baseDate.getMonth();
       const lastDay = new Date(year, month + 1, 0).getDate();
 
+      // 로컬 필터 데이터 가져오기
+      const selType = document.getElementById('dailyTypeFilter').value || 'ALL';
+      const selCh = document.getElementById('dailyChannelFilter').value || 'ALL';
+      const selCampType = document.getElementById('dailyCampaignTypeFilter').value || 'ALL';
+
       const dateMap = {};
       rawDailyData.forEach(d => {
-        if ((selType === 'ALL' || d.type === selType) && 
-            (selCh === 'ALL' || d.channel === selCh) && 
-            (selCampType === 'ALL' || d.campaignType === selCampType)) {
-          
-          if (!dateMap[d.date]) {
-            dateMap[d.date] = { date: d.date, imp: 0, clicks: 0, spend: 0, reg: 0, pur: 0, rev: 0, count: 0 };
+        // 해당 월에 속하는 데이터만
+        const dYear = parseInt(d.date.substring(0, 4));
+        const dMonth = parseInt(d.date.substring(5, 7)) - 1;
+
+        if (dYear === year && dMonth === month) {
+          if ((selType === 'ALL' || d.type === selType) && 
+              (selCh === 'ALL' || d.channel === selCh) && 
+              (selCampType === 'ALL' || d.campaignType === selCampType)) {
+            
+            if (!dateMap[d.date]) {
+              dateMap[d.date] = { date: d.date, imp: 0, clicks: 0, spend: 0, reg: 0, pur: 0, rev: 0, count: 0 };
+            }
+            dateMap[d.date].imp += d.imp;
+            dateMap[d.date].clicks += d.clicks;
+            dateMap[d.date].spend += d.spend;
+            dateMap[d.date].reg += d.reg;
+            dateMap[d.date].pur += d.pur;
+            dateMap[d.date].rev += d.rev;
+            dateMap[d.date].count += 1;
           }
-          dateMap[d.date].imp += d.imp;
-          dateMap[d.date].clicks += d.clicks;
-          dateMap[d.date].spend += d.spend;
-          dateMap[d.date].reg += d.reg;
-          dateMap[d.date].pur += d.pur;
-          dateMap[d.date].rev += d.rev;
-          dateMap[d.date].count += 1;
         }
       });
 
@@ -1217,20 +1292,20 @@
           <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 ${rowColorClass}">
             <td class="py-2 px-2 sticky-col cursor-pointer hover:underline font-bold" onclick="openDrillDownModal('${dt}')">${dt.substring(5)}</td>
             <td class="py-2 px-2">${dowStr}</td>
-            <td class="py-2 px-3 text-right">${formatNumber(item.imp)}</td>
-            <td class="py-2 px-3 text-right">${formatNumber(item.clicks)}</td>
-            <td class="py-2 px-2.5 text-right">${ctr > 0 ? ctr.toFixed(2) + '%' : '0.00%'}</td>
-            <td class="py-2 px-2.5 text-right">${formatCurrency(cpc).replace('₩','')}</td>
-            <td class="py-2 px-3 text-right font-bold">${formatCurrency(item.spend)}</td>
-            <td class="py-2 px-2.5 text-right font-semibold text-purple-600 dark:text-purple-400">${formatNumber(item.reg)}</td>
-            <td class="py-2 px-2.5 text-right font-semibold text-blue-600 dark:text-blue-400">${formatNumber(item.pur)}</td>
-            <td class="py-2 px-3 text-right">${formatCurrency(item.rev)}</td>
-            <td class="py-2 px-2.5 text-right">${formatCurrency(purCpa)}</td>
-            <td class="py-2 px-2.5 text-right font-bold">${roas > 0 ? Math.round(roas) + '%' : '0%'}</td>
-            <td class="py-2 px-2.5 text-right">${formatCurrency(regCpa)}</td>
-            <td class="py-2 px-2 text-right">${purCvr > 0 ? purCvr.toFixed(2) + '%' : '0.00%'}</td>
-            <td class="py-2 px-2 text-right">${regCvr > 0 ? regCvr.toFixed(2) + '%' : '0.00%'}</td>
-            <td class="py-2 px-3 text-right font-black">${formatCurrency(totalCpa)}</td>
+            <td class="py-2 px-3 text-right tabular-nums">${formatNumber(item.imp)}</td>
+            <td class="py-2 px-3 text-right tabular-nums">${formatNumber(item.clicks)}</td>
+            <td class="py-2 px-2.5 text-right tabular-nums">${ctr > 0 ? ctr.toFixed(2) + '%' : '0.00%'}</td>
+            <td class="py-2 px-2.5 text-right tabular-nums">${formatCurrency(cpc).replace('₩','')}</td>
+            <td class="py-2 px-3 text-right font-bold tabular-nums">${formatCurrency(item.spend)}</td>
+            <td class="py-2 px-2.5 text-right font-semibold tabular-nums text-purple-600 dark:text-purple-400">${formatNumber(item.reg)}</td>
+            <td class="py-2 px-2.5 text-right font-semibold tabular-nums text-blue-600 dark:text-blue-400">${formatNumber(item.pur)}</td>
+            <td class="py-2 px-3 text-right tabular-nums">${formatCurrency(item.rev)}</td>
+            <td class="py-2 px-2.5 text-right tabular-nums">${formatCurrency(purCpa)}</td>
+            <td class="py-2 px-2.5 text-right font-bold tabular-nums">${roas > 0 ? Math.round(roas) + '%' : '0%'}</td>
+            <td class="py-2 px-2.5 text-right tabular-nums">${formatCurrency(regCpa)}</td>
+            <td class="py-2 px-2 text-right tabular-nums">${purCvr > 0 ? purCvr.toFixed(2) + '%' : '0.00%'}</td>
+            <td class="py-2 px-2 text-right tabular-nums">${regCvr > 0 ? regCvr.toFixed(2) + '%' : '0.00%'}</td>
+            <td class="py-2 px-3 text-right font-black tabular-nums text-slate-800 dark:text-white">${formatCurrency(totalCpa)}</td>
           </tr>
         `;
       }).join('');
@@ -1250,20 +1325,20 @@
           <tr>
             <td class="py-3 px-2 sticky-col text-slate-900 dark:text-white">${month + 1}월 TOTAL</td>
             <td class="py-3 px-2">-</td>
-            <td class="py-3 px-3 text-right">${formatNumber(totalImp)}</td>
-            <td class="py-3 px-3 text-right">${formatNumber(totalClicks)}</td>
-            <td class="py-3 px-2.5 text-right">${avgCtr > 0 ? avgCtr.toFixed(2) + '%' : '0.00%'}</td>
-            <td class="py-3 px-2.5 text-right">${formatCurrency(avgCpc).replace('₩','')}</td>
-            <td class="py-3 px-3 text-right text-slate-900 dark:text-white">${formatCurrency(totalSpend)}</td>
-            <td class="py-3 px-2.5 text-right text-purple-700 dark:text-purple-300">${formatNumber(totalReg)}</td>
-            <td class="py-3 px-2.5 text-right text-blue-700 dark:text-blue-300">${formatNumber(totalPur)}</td>
-            <td class="py-3 px-3 text-right">${formatCurrency(totalRev)}</td>
-            <td class="py-3 px-2.5 text-right">${formatCurrency(avgPurCpa)}</td>
-            <td class="py-3 px-2.5 text-right text-indigo-600 dark:text-indigo-400">${avgRoas > 0 ? Math.round(avgRoas) + '%' : '0%'}</td>
-            <td class="py-3 px-2.5 text-right">${formatCurrency(avgRegCpa)}</td>
-            <td class="py-3 px-2 text-right">${avgPurCvr > 0 ? avgPurCvr.toFixed(2) + '%' : '0.00%'}</td>
-            <td class="py-3 px-2 text-right">${avgRegCvr > 0 ? avgRegCvr.toFixed(2) + '%' : '0.00%'}</td>
-            <td class="py-3 px-3 text-right text-emerald-700 dark:text-emerald-400">${formatCurrency(avgTotalCpa)}</td>
+            <td class="py-3 px-3 text-right tabular-nums">${formatNumber(totalImp)}</td>
+            <td class="py-3 px-3 text-right tabular-nums">${formatNumber(totalClicks)}</td>
+            <td class="py-3 px-2.5 text-right tabular-nums">${avgCtr > 0 ? avgCtr.toFixed(2) + '%' : '0.00%'}</td>
+            <td class="py-3 px-2.5 text-right tabular-nums">${formatCurrency(avgCpc).replace('₩','')}</td>
+            <td class="py-3 px-3 text-right text-slate-900 dark:text-white tabular-nums">${formatCurrency(totalSpend)}</td>
+            <td class="py-3 px-2.5 text-right text-purple-700 dark:text-purple-300 tabular-nums">${formatNumber(totalReg)}</td>
+            <td class="py-3 px-2.5 text-right text-blue-700 dark:text-blue-300 tabular-nums">${formatNumber(totalPur)}</td>
+            <td class="py-3 px-3 text-right tabular-nums">${formatCurrency(totalRev)}</td>
+            <td class="py-3 px-2.5 text-right tabular-nums">${formatCurrency(avgPurCpa)}</td>
+            <td class="py-3 px-2.5 text-right text-indigo-600 dark:text-indigo-400 tabular-nums">${avgRoas > 0 ? Math.round(avgRoas) + '%' : '0%'}</td>
+            <td class="py-3 px-2.5 text-right tabular-nums">${formatCurrency(avgRegCpa)}</td>
+            <td class="py-3 px-2 text-right tabular-nums">${avgPurCvr > 0 ? avgPurCvr.toFixed(2) + '%' : '0.00%'}</td>
+            <td class="py-3 px-2 text-right tabular-nums">${avgRegCvr > 0 ? avgRegCvr.toFixed(2) + '%' : '0.00%'}</td>
+            <td class="py-3 px-3 text-right text-emerald-700 dark:text-emerald-400 tabular-nums">${formatCurrency(avgTotalCpa)}</td>
           </tr>
         `;
       }
@@ -1283,9 +1358,9 @@
         <tr class="hover:bg-slate-50 dark:hover:bg-slate-800">
           <td class="py-1.5 px-2.5">${d.date.substring(5)}</td>
           <td class="py-1.5 px-2.5 truncate max-w-[200px]" title="${d.name}">${d.name}</td>
-          <td class="py-1.5 px-2.5 text-right font-bold">${formatCurrency(d.spend)}</td>
-          <td class="py-1.5 px-2.5 text-right text-purple-600">${formatNumber(d.reg)}</td>
-          <td class="py-1.5 px-2.5 text-right text-blue-600">${formatNumber(d.pur)}</td>
+          <td class="py-1.5 px-2.5 text-right font-bold tabular-nums">${formatCurrency(d.spend)}</td>
+          <td class="py-1.5 px-2.5 text-right text-purple-600 tabular-nums">${formatNumber(d.reg)}</td>
+          <td class="py-1.5 px-2.5 text-right text-blue-600 tabular-nums">${formatNumber(d.pur)}</td>
         </tr>
       `).join('') : `<tr><td colspan="5" class="py-4 text-center text-slate-400">데이터가 없습니다.</td></tr>`;
 
@@ -1294,9 +1369,9 @@
           <td class="py-1.5 px-2.5">${d.date.substring(5)}</td>
           <td class="py-1.5 px-2.5 truncate max-w-[180px]" title="${d.name}">${d.name}</td>
           <td class="py-1.5 px-2.5 text-slate-500">${d.campaignType || '-'}</td>
-          <td class="py-1.5 px-2.5 text-right font-bold">${formatCurrency(d.spend)}</td>
-          <td class="py-1.5 px-2.5 text-right text-purple-600">${formatNumber(d.reg)}</td>
-          <td class="py-1.5 px-2.5 text-right text-blue-600">${formatNumber(d.pur)}</td>
+          <td class="py-1.5 px-2.5 text-right font-bold tabular-nums">${formatCurrency(d.spend)}</td>
+          <td class="py-1.5 px-2.5 text-right text-purple-600 tabular-nums">${formatNumber(d.reg)}</td>
+          <td class="py-1.5 px-2.5 text-right text-blue-600 tabular-nums">${formatNumber(d.pur)}</td>
         </tr>
       `).join('') : `<tr><td colspan="6" class="py-4 text-center text-slate-400">데이터가 없습니다.</td></tr>`;
     }
@@ -1397,7 +1472,7 @@
       topChartInstance = new Chart(canvas.getContext('2d'), {
         type: 'bar',
         data: {
-          labels: top.map(n => n.name),
+          labels: top.map(n => n.name.length > 10 ? n.name.substring(0, 10) + '..' : n.name),
           datasets: [
             { label: 'CPA', data: top.map(d => d.cpa_total === Infinity ? 0 : d.cpa_total), backgroundColor: '#10b981', xAxisID: 'xC', borderRadius: 4 },
             { label: 'ROAS(%)', data: top.map(d => d.roas), backgroundColor: '#6366f1', xAxisID: 'xR', borderRadius: 4 }
@@ -1430,22 +1505,14 @@
 
     function handleSort(col) { sortDesc = (sortCol === col) ? !sortDesc : true; sortCol = col; renderDashboard(); }
     
-    function setTableChannelTab(ch) {
-      tableChannelTab = ch;
-      const chEl = document.getElementById('channelFilter');
-      if (chEl) chEl.value = ch;
-      
-      updateTableChannelTabButtons(ch);
-      updateCampaignTypeDropdownVisibility(ch);
-      renderDashboard();
-    }
-
     function renderTable(currList, prevItemsMap) {
       const validCpas = currList.filter(i => i.cpa_total !== Infinity && i.total_conv > 0).map(i => i.cpa_total);
       const benchmarkCpa = validCpas.length > 0 ? validCpas.reduce((a,b)=>a+b, 0) / validCpas.length : 45000;
 
       let tData = [...currList];
       let sumSpend = 0, sumReg = 0, sumPur = 0, sumConv = 0, sumClicks = 0, sumRev = 0;
+      
+      const maxCpaTotal = Math.max(...tData.map(d => d.cpa_total === Infinity ? 0 : d.cpa_total), 1);
 
       tData = tData.map(c => {
         sumSpend += c.spend; sumReg += c.reg; sumPur += c.pur; sumConv += c.total_conv; sumClicks += c.clicks; sumRev += c.rev;
@@ -1496,32 +1563,41 @@
       if(!tb) return;
       tb.innerHTML = '';
       tData.forEach(r => {
-        const bCls = r.channel === '메타' ? 'badge-meta' : 'badge-google';
+        const bCls = 'badge-neutral mr-1';
         const urlsStr = r.urls && r.urls.length > 0 ? r.urls.join(',') : '';
         const hasUrl = urlsStr.length > 0;
         const clickAttr = hasUrl ? `onclick="openCreativeModal('${r.channel}', '${r.name.replace(/'/g, "\\'")}', '${urlsStr}')"` : '';
         const nameStyle = hasUrl ? 'cursor-pointer text-indigo-600 dark:text-indigo-400 hover:underline font-bold' : 'text-slate-800 dark:text-slate-200';
+        const campTypeBadge = r.campaignType ? `<span class="text-[9px] bg-slate-100 text-slate-500 border border-slate-200 px-1 py-0.5 rounded ml-1 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300">${r.campaignType}</span>` : '';
         
-        const campTypeBadge = r.campaignType ? `<span class="text-[9px] bg-slate-100 text-slate-500 border border-slate-200 px-1 py-0.5 rounded ml-1 dark:bg-slate-700">${r.campaignType}</span>` : '';
+        // CPA Data Bar
+        const cpaValue = r.cpa_total === Infinity ? 0 : r.cpa_total;
+        const cpaBarWidth = (cpaValue / maxCpaTotal) * 100;
 
         const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition-colors h-10';
+        tr.className = 'hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition-colors h-11';
         tr.innerHTML = `
           <td class="py-2 px-3 sticky-col truncate max-w-[240px]">
-            <span class="${bCls} mr-1">${r.channel}</span>
+            <span class="${bCls}">${r.channel}</span>
             <span class="${nameStyle}" ${clickAttr}>${r.name}</span>
             ${campTypeBadge}
           </td>
           <td class="py-2 px-3 text-center">${r.customBadge}</td>
-          <td class="py-2 px-3 text-right font-bold text-slate-900 dark:text-slate-100">${formatCurrency(r.spend)}</td>
-          <td class="py-2 px-3 text-right">${formatNumber(r.reg)}</td>
-          <td class="py-2 px-3 text-right text-slate-500 dark:text-slate-400">${formatCurrency(r.cpa_reg)}</td>
-          <td class="py-2 px-3 text-right">${formatNumber(r.pur)}</td>
-          <td class="py-2 px-3 text-right text-slate-500 dark:text-slate-400">${formatCurrency(r.cpa_pur)}</td>
-          <td class="py-2 px-3 text-right font-black text-slate-900 dark:text-white">${formatNumber(r.total_conv)} ${r.convDeltaHtml}</td>
-          <td class="py-2 px-3 text-right font-bold text-slate-800 dark:text-slate-200">${formatCurrency(r.cpa_total)} ${r.cpaDeltaHtml}</td>
-          <td class="py-2 px-3 text-right text-slate-600 dark:text-slate-400">${r.cvr > 0 ? r.cvr.toFixed(2) + '%' : '0.00%'}</td>
-          <td class="py-2 px-3 text-right font-semibold text-slate-700 dark:text-slate-300">${r.roas > 0 ? r.roas.toFixed(1) + '%' : '-'}</td>
+          <td class="py-2 px-3 text-right font-bold text-slate-900 dark:text-slate-100 tabular-nums">${formatCurrency(r.spend)}</td>
+          <td class="py-2 px-3 text-right tabular-nums">${formatNumber(r.reg)}</td>
+          <td class="py-2 px-3 text-right text-slate-500 dark:text-slate-400 tabular-nums">${formatCurrency(r.cpa_reg)}</td>
+          <td class="py-2 px-3 text-right tabular-nums">${formatNumber(r.pur)}</td>
+          <td class="py-2 px-3 text-right text-slate-500 dark:text-slate-400 tabular-nums">${formatCurrency(r.cpa_pur)}</td>
+          <td class="py-2 px-3 text-right font-black text-slate-900 dark:text-white tabular-nums">${formatNumber(r.total_conv)} ${r.convDeltaHtml}</td>
+          <td class="py-2.5 px-3 text-right tabular-nums relative z-0">
+            <div class="absolute inset-y-1.5 right-0 bg-slate-200/50 dark:bg-slate-700/60 -z-10 rounded" style="width: ${cpaBarWidth}%;"></div>
+            <div class="flex flex-col items-end justify-center">
+              <span class="font-black text-slate-900 dark:text-white">${formatCurrency(r.cpa_total)}</span>
+              ${r.cpaDeltaHtml}
+            </div>
+          </td>
+          <td class="py-2 px-3 text-right text-slate-600 dark:text-slate-400 tabular-nums">${r.cvr > 0 ? r.cvr.toFixed(2) + '%' : '0.00%'}</td>
+          <td class="py-2 px-3 text-right font-semibold text-slate-700 dark:text-slate-300 tabular-nums">${r.roas > 0 ? r.roas.toFixed(1) + '%' : '-'}</td>
         `;
         tb.appendChild(tr);
       });
@@ -1580,13 +1656,9 @@
 
       currList.forEach(c => {
         let badgeHtml = '';
-        if (c.total_conv > 0 && c.cpa_total <= benchmarkCpa * 0.8) {
-          badgeHtml = `<span class="badge-status badge-status-good">고효율</span>`;
-        } else if ((c.total_conv === 0 && c.spend > 50000) || c.cpa_total > benchmarkCpa * 1.3) {
-          badgeHtml = `<span class="badge-status badge-status-bad">점검필요</span>`;
-        } else {
-          badgeHtml = `<span class="badge-status badge-status-neutral">유지</span>`;
-        }
+        if (c.total_conv > 0 && c.cpa_total <= benchmarkCpa * 0.8) badgeHtml = `<span class="badge-status badge-status-good">고효율</span>`;
+        else if ((c.total_conv === 0 && c.spend > 50000) || c.cpa_total > benchmarkCpa * 1.3) badgeHtml = `<span class="badge-status badge-status-bad">점검필요</span>`;
+        else badgeHtml = `<span class="badge-status badge-status-neutral">유지</span>`;
 
         let convDeltaHtml = '', cpaDeltaHtml = '';
         let prevC = prevItemsMap ? prevItemsMap[`${c.channel}_${c.name}`] : null;
@@ -1595,7 +1667,7 @@
           cpaDeltaHtml = getContextualDeltaHtml(c.cpa_total !== Infinity ? c.cpa_total : 0, prevC.cpa_total !== Infinity ? prevC.cpa_total : 0, 'cost');
         }
 
-        const bCls = c.channel === '메타' ? 'badge-meta' : 'badge-google';
+        const bCls = 'badge-neutral';
         const urlsStr = c.urls && c.urls.length > 0 ? c.urls.join(',') : '';
         const hasUrl = urlsStr.length > 0;
         const clickAttr = hasUrl ? `onclick="openCreativeModal('${c.channel}', '${c.name.replace(/'/g, "\\'")}', '${urlsStr}')"` : '';
@@ -1603,7 +1675,7 @@
         const campTypeBadge = c.campaignType ? `<span class="text-[9px] bg-slate-100 text-slate-500 border border-slate-200 px-1 py-0.5 rounded ml-1 dark:bg-slate-700">${c.campaignType}</span>` : '';
 
         const card = document.createElement('div');
-        card.className = "bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs space-y-2";
+        card.className = "bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-2";
         card.innerHTML = `
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-1.5">
             <div class="flex items-center gap-1 truncate max-w-[220px]">
@@ -1614,20 +1686,15 @@
           </div>
           <div class="mb-1">${campTypeBadge}</div>
           <div class="grid grid-cols-2 gap-2 text-xs">
-            <div><span class="text-[10px] text-slate-400 block">집행비용</span><span class="font-bold text-slate-900 dark:text-slate-100">${formatCurrency(c.spend)}</span></div>
-            <div><span class="text-[10px] text-slate-400 block">합산전환</span><span class="font-bold text-slate-900 dark:text-white">${formatNumber(c.total_conv)}건</span> ${convDeltaHtml}</div>
-            <div><span class="text-[10px] text-slate-400 block">평균 CPA</span><span class="font-bold text-slate-900 dark:text-slate-100">${formatCurrency(c.cpa_total)}</span> ${cpaDeltaHtml}</div>
-            <div><span class="text-[10px] text-slate-400 block">ROAS</span><span class="font-bold text-slate-900 dark:text-slate-100">${c.roas > 0 ? c.roas.toFixed(1) + '%' : '-'}</span></div>
+            <div><span class="text-[10px] text-slate-400 block">집행비용</span><span class="font-bold text-slate-900 dark:text-slate-100 tabular-nums">${formatCurrency(c.spend)}</span></div>
+            <div><span class="text-[10px] text-slate-400 block">합산전환</span><span class="font-bold text-slate-900 dark:text-white tabular-nums">${formatNumber(c.total_conv)}건</span> ${convDeltaHtml}</div>
+            <div><span class="text-[10px] text-slate-400 block">평균 CPA</span><span class="font-bold text-slate-900 dark:text-slate-100 tabular-nums">${formatCurrency(c.cpa_total)}</span> <div class="inline-block">${cpaDeltaHtml}</div></div>
+            <div><span class="text-[10px] text-slate-400 block">ROAS</span><span class="font-bold text-slate-900 dark:text-slate-100 tabular-nums">${c.roas > 0 ? c.roas.toFixed(1) + '%' : '-'}</span></div>
           </div>
         `;
         container.appendChild(card);
       });
     }
-
-    ['typeFilter', 'channelFilter'].forEach(id => {
-      const el = document.getElementById(id);
-      if(el) el.addEventListener('change', () => { renderDashboard(); });
-    });
 
     async function boot() { fetchAllData(); }
     boot();
