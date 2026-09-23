@@ -39,7 +39,10 @@
     .table-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
     .dark .table-scrollbar::-webkit-scrollbar-thumb { background-color: #475569; }
     
-    /* 무채색 메타데이터 뱃지 통일 */
+    .badge-meta { background-color: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+    .badge-google { background-color: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+    .badge-naver { background-color: #f0fdfa; color: #0f766e; border: 1px solid #ccfbf1; padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+
     .badge-neutral { background-color: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; display: inline-block; }
     .dark .badge-neutral { background-color: #334155; color: #cbd5e1; border-color: #475569; }
 
@@ -62,7 +65,6 @@
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 antialiased pb-12 overflow-x-hidden overflow-hidden transition-colors duration-300" id="mainBody">
   
-  <!-- 로그인 스크린 -->
   <div id="loginScreen" class="fixed inset-0 bg-slate-900/95 z-[999] flex flex-col items-center justify-center p-4 transition-opacity duration-500">
     <div class="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center space-y-5 border border-slate-200 dark:border-slate-700">
       <div class="w-14 h-14 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center mx-auto text-2xl shadow-inner">🔒</div>
@@ -78,13 +80,11 @@
     </div>
   </div>
 
-  <!-- 우측 슬라이드 트리거 버튼 -->
   <button onclick="toggleRawDrawer()" class="fixed right-0 top-[26%] bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white py-3.5 px-2 rounded-l-lg shadow-xl z-40 transition-all border border-slate-700 flex flex-col items-center gap-1.5 group">
     <span class="text-sm group-hover:scale-110 transition-transform">📑</span>
     <span class="text-[10px] font-bold tracking-wider leading-tight text-center" style="writing-mode: vertical-rl; text-orientation: mixed;">채널별 로우시트</span>
   </button>
 
-  <!-- 우측 슬라이드 로우시트 뷰어 패널 -->
   <div id="rawDrawer" class="fixed right-0 top-0 h-full w-full sm:w-[620px] bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 overflow-hidden border-l border-slate-200 dark:border-slate-800 flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80">
       <div class="flex items-center gap-2">
@@ -95,13 +95,14 @@
     </div>
 
     <div class="flex items-center gap-2 p-3 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-      <button onclick="switchRawTab('meta')" id="rawTabMeta" class="flex-1 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs border border-blue-200 dark:border-blue-900">메타(A~M열) 로우</button>
-      <button onclick="switchRawTab('google')" id="rawTabGoogle" class="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-transparent text-slate-600 dark:text-slate-300 hover:bg-white/50">구글(O~X열) 로우</button>
+      <button onclick="switchRawTab('meta')" id="rawTabMeta" class="flex-1 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs border border-blue-200 dark:border-blue-900">메타 로우</button>
+      <button onclick="switchRawTab('google')" id="rawTabGoogle" class="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-transparent text-slate-600 dark:text-slate-300 hover:bg-white/50">구글 로우</button>
+      <button onclick="switchRawTab('naver')" id="rawTabNaver" class="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-transparent text-slate-600 dark:text-slate-300 hover:bg-white/50">네이버 로우</button>
     </div>
 
     <div class="flex-1 overflow-auto touch-scroll table-scrollbar p-3">
       <div id="metaRawContainer" class="space-y-2">
-        <div class="text-[11px] text-slate-500 font-medium">메타: 지출금액($ × 1,547원 환산), F열: 등록(매입), H열: 구매(판매)</div>
+        <div class="text-[11px] text-slate-500 font-medium">메타: E열 환산 지출($ × 1,547원), F열 등록완료(매입), H열 구매(판매)</div>
         <div class="border border-slate-200 dark:border-slate-700 rounded-lg overflow-x-auto">
           <table class="w-full text-left text-[11px] whitespace-nowrap">
             <thead class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
@@ -119,7 +120,7 @@
       </div>
 
       <div id="googleRawContainer" class="space-y-2 hidden">
-        <div class="text-[11px] text-slate-500 font-medium">구글: 비용(원화 그대로), V열 결과 정밀 파싱(예약: 매입 / 구매하기: 판매)</div>
+        <div class="text-[11px] text-slate-500 font-medium">구글: U열 비용(원화), V열 결과 정규식 파싱(예약: 매입 / 구매하기: 판매)</div>
         <div class="border border-slate-200 dark:border-slate-700 rounded-lg overflow-x-auto">
           <table class="w-full text-left text-[11px] whitespace-nowrap">
             <thead class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
@@ -136,13 +137,29 @@
           </table>
         </div>
       </div>
+
+      <div id="naverRawContainer" class="space-y-2 hidden">
+        <div class="text-[11px] text-slate-500 font-medium">네이버: AE열 비용(원화), AG열 등록완료(매입), AH열 구매(판매)</div>
+        <div class="border border-slate-200 dark:border-slate-700 rounded-lg overflow-x-auto">
+          <table class="w-full text-left text-[11px] whitespace-nowrap">
+            <thead class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+              <tr>
+                <th class="py-2 px-2.5">일자(AB)</th>
+                <th class="py-2 px-2.5">캠페인(Z)</th>
+                <th class="py-2 px-2.5">유형(AA)</th>
+                <th class="py-2 px-2.5 text-right">비용(AE)</th>
+                <th class="py-2 px-2.5 text-right">등록완료(AG)</th>
+                <th class="py-2 px-2.5 text-right">구매(AH)</th>
+              </tr>
+            </thead>
+            <tbody id="naverRawTableBody" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- 대시보드 메인 레이아웃 -->
   <div class="max-w-7xl mx-auto space-y-4 p-3 sm:p-6 opacity-0 transition-opacity duration-700" id="dashboardContent">
-    
-    <!-- 1. 헤더 -->
     <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
       <div class="flex items-center gap-3">
         <h1 class="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight">통합 광고 성과 대시보드</h1>
@@ -159,12 +176,10 @@
       </div>
     </header>
 
-    <!-- 모바일 전용 필터 토글 버튼 -->
     <button onclick="document.getElementById('controlPanel').classList.toggle('hidden')" class="w-full lg:hidden bg-slate-800 text-white p-3 rounded-xl shadow-sm text-xs font-bold flex justify-center items-center gap-2 hover:bg-slate-700 transition-colors">
       <span>⚙️ 글로벌 분석 필터 및 기간 설정 (비교모드)</span>
     </button>
 
-    <!-- 2. 컨트롤러 (글로벌) -->
     <div id="controlPanel" class="hidden lg:block bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
       <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-700">
         <div class="flex items-center gap-2 flex-wrap">
@@ -202,6 +217,7 @@
           <option value="ALL">전체 매체</option>
           <option value="메타">Meta</option>
           <option value="구글">Google</option>
+          <option value="네이버">Naver</option>
         </select>
         <select id="typeFilter" class="bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 font-semibold rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-indigo-500" onchange="renderDashboard()">
           <option value="ALL">전체 BM</option>
@@ -217,13 +233,11 @@
       </div>
     </div>
 
-    <!-- 3. 핵심 KPI -->
     <div class="space-y-2">
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3" id="heroKpiContainer"></div>
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3" id="subKpiContainer"></div>
     </div>
 
-    <!-- 4. 브리핑 -->
     <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
       <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-100 dark:border-slate-700">
         <div class="flex items-center gap-2">
@@ -248,7 +262,6 @@
       </div>
     </div>
 
-    <!-- 5. 차트 시각화 -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
         <div class="flex justify-between items-center mb-3">
@@ -266,10 +279,9 @@
       </div>
     </div>
 
-    <!-- 6. 데일리 시트 (1일~말일) : 상단 필터와 완전히 분리 -->
+    <!-- 6. 데일리 시트 -->
     <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
       
-      <!-- 상단 타이틀 및 로컬 필터 영역 -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700 pb-3">
         <div class="flex flex-col gap-1">
           <div class="flex items-center gap-2">
@@ -279,12 +291,12 @@
           <span class="text-[10px] text-slate-400">상단의 글로벌 세그먼트와 무관하게 이 표만의 <strong class="text-indigo-500">독립적인 분석 필터</strong>가 적용됩니다.</span>
         </div>
 
-        <!-- 독립(Local) 분석 세그먼트 필터 -->
         <div class="flex items-center gap-1.5 flex-wrap text-xs">
           <select id="dailyChannelFilter" class="bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 font-semibold rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-indigo-500" onchange="syncDailyChannelFilter()">
             <option value="ALL">전체 매체</option>
             <option value="메타">Meta</option>
             <option value="구글">Google</option>
+            <option value="네이버">Naver</option>
           </select>
           <select id="dailyTypeFilter" class="bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 font-semibold rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-indigo-500" onchange="renderDailySheetTable()">
             <option value="ALL">전체 BM</option>
@@ -327,7 +339,7 @@
       </div>
     </div>
 
-    <!-- 7. 캠페인별 성과 상세표 -->
+    <!-- 7. 캠페인별 상세 -->
     <div class="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div class="flex items-center gap-2">
@@ -338,9 +350,9 @@
           <button onclick="setTableChannelTab('ALL')" id="tTabAll" class="px-2.5 py-1 rounded-md font-bold bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs transition-all">전체</button>
           <button onclick="setTableChannelTab('메타')" id="tTabMeta" class="px-2.5 py-1 rounded-md font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 transition-all">Meta</button>
           <button onclick="setTableChannelTab('구글')" id="tTabGoogle" class="px-2.5 py-1 rounded-md font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 transition-all">Google</button>
+          <button onclick="setTableChannelTab('네이버')" id="tTabNaver" class="px-2.5 py-1 rounded-md font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 transition-all">Naver</button>
         </div>
       </div>
-      
       <div class="hidden md:block overflow-x-auto touch-scroll table-scrollbar border border-slate-200 dark:border-slate-700 rounded-lg">
         <table class="w-full text-left text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap min-w-[1000px]">
           <thead class="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700 font-bold">
@@ -362,14 +374,13 @@
           <tfoot id="dataTableFoot" class="bg-slate-50 dark:bg-slate-800/90 border-t-2 border-slate-200 dark:border-slate-600 font-bold"></tfoot>
         </table>
       </div>
-
       <div class="block md:hidden mb-2" id="mobileSummaryCard"></div>
       <div class="block md:hidden space-y-2.5" id="mobileCardContainer"></div>
     </div>
 
   </div>
 
-  <!-- 각종 모달 -->
+  <!-- 모달 모음 -->
   <div id="creativeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center modal-overlay p-4" onclick="closeCreativeModal()">
     <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-5 space-y-4 modal-content relative shadow-2xl border border-slate-200 dark:border-slate-700" onclick="event.stopPropagation()">
       <div class="flex items-center justify-between border-b dark:border-slate-700 pb-3">
@@ -477,8 +488,10 @@
       const parsed = [];
       if (!rows || rows.length < 2) return;
 
+      // 완전 고정 인덱스 (동적 헤더 탐색 삭제)
       const META = { name: 0, date: 1, imp: 2, clicks: 3, spend: 4, reg: 5, pur: 7, rev: 8, url1: 10, url2: 11, url3: 12 };
       const GOOGLE = { name: 14, campaignType: 15, date: 16, imp: 17, clicks: 18, spend: 20, results: 21, rev: 23 };
+      const NAVER = { name: 25, campaignType: 26, date: 27, imp: 28, clicks: 29, spend: 30, rev: 31, reg: 32, pur: 33 };
 
       rows.forEach((row, idx) => {
         if (!row || row.length === 0 || idx === 0) return;
@@ -553,12 +566,36 @@
             });
           }
         }
+
+        // 3. Naver (Z~AH)[cite: 9]
+        if (row[NAVER.date] !== undefined && row[NAVER.name] !== undefined) {
+          const nDate = normalizeDate(row[NAVER.date]);
+          const nName = String(row[NAVER.name] || '').trim();
+
+          if (nDate && nName && nName !== '캠페인' && !nName.includes('총계')) {
+            const campType = String(row[NAVER.campaignType] || '').trim();
+            const spendKrw = cleanNumber(row[NAVER.spend]);
+            const imp = cleanNumber(row[NAVER.imp]);
+            const clicks = cleanNumber(row[NAVER.clicks]);
+            const revKrw = cleanNumber(row[NAVER.rev]);
+            const reg = cleanNumber(row[NAVER.reg]);
+            const pur = cleanNumber(row[NAVER.pur]);
+
+            const isBuy = nName.includes('매입');
+            const isSale = nName.includes('판매') || nName.includes('구입');
+            const type = isBuy ? '매입' : (isSale ? '판매' : '혼합');
+
+            parsed.push({
+              date: nDate, name: nName, channel: '네이버', campaignType: campType,
+              spend: spendKrw, reg: reg, pur: pur, rev: revKrw, imp: imp, clicks: clicks, type: type, urls: []
+            });
+          }
+        }
       });
 
       rawDailyData = parsed;
 
-      // 캠페인 유형 셀렉트 박스 채우기 (글로벌, 로컬 둘다)
-      const uniqueCampTypes = [...new Set(parsed.filter(d => d.channel === '구글' && d.campaignType !== '').map(d => d.campaignType))].sort();
+      const uniqueCampTypes = [...new Set(parsed.filter(d => (d.channel === '구글' || d.channel === '네이버') && d.campaignType !== '').map(d => d.campaignType))].sort();
       const campTypeSelect = document.getElementById('campaignTypeFilter');
       const dailyCampTypeSelect = document.getElementById('dailyCampaignTypeFilter');
       
@@ -641,19 +678,31 @@
     function switchRawTab(channel) {
       const metaBtn = document.getElementById('rawTabMeta');
       const googleBtn = document.getElementById('rawTabGoogle');
+      const naverBtn = document.getElementById('rawTabNaver');
+      
       const metaBox = document.getElementById('metaRawContainer');
       const googleBox = document.getElementById('googleRawContainer');
+      const naverBox = document.getElementById('naverRawContainer');
+
+      const resetBtn = (btn) => btn.className = "flex-1 py-1.5 rounded-lg text-xs font-semibold bg-transparent text-slate-600 dark:text-slate-300 hover:bg-white/50";
+      
+      resetBtn(metaBtn);
+      resetBtn(googleBtn);
+      resetBtn(naverBtn);
+      
+      metaBox.classList.add('hidden');
+      googleBox.classList.add('hidden');
+      naverBox.classList.add('hidden');
 
       if (channel === 'meta') {
         metaBtn.className = "flex-1 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs border border-blue-200 dark:border-blue-900";
-        googleBtn.className = "flex-1 py-1.5 rounded-lg text-xs font-semibold bg-transparent text-slate-600 dark:text-slate-300 hover:bg-white/50";
         metaBox.classList.remove('hidden');
-        googleBox.classList.add('hidden');
-      } else {
+      } else if (channel === 'google') {
         googleBtn.className = "flex-1 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-xs border border-emerald-200 dark:border-emerald-900";
-        metaBtn.className = "flex-1 py-1.5 rounded-lg text-xs font-semibold bg-transparent text-slate-600 dark:text-slate-300 hover:bg-white/50";
         googleBox.classList.remove('hidden');
-        metaBox.classList.add('hidden');
+      } else {
+        naverBtn.className = "flex-1 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-xs border border-teal-200 dark:border-teal-900";
+        naverBox.classList.remove('hidden');
       }
     }
 
@@ -693,7 +742,7 @@
 
       const chEl = document.getElementById('modalCampaignChannel');
       chEl.textContent = channel;
-      chEl.className = channel === '메타' ? 'badge-meta' : 'badge-google';
+      chEl.className = channel === '메타' ? 'badge-meta' : (channel === '구글' ? 'badge-google' : 'badge-naver');
       document.getElementById('modalCampaignName').textContent = name;
       
       const container = document.getElementById('modalCreativeContainer');
@@ -878,9 +927,12 @@
     }
 
     function updateTableChannelTabButtons(ch) {
-      ['ALL', '메타', '구글'].forEach(c => {
-        const btn = document.getElementById(c === 'ALL' ? 'tTabAll' : (c === '메타' ? 'tTabMeta' : 'tTabGoogle'));
-        if (btn) btn.className = c === ch ? "px-2.5 py-1 rounded-md font-bold bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs transition-all" : "px-2.5 py-1 rounded-md font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 transition-all";
+      ['ALL', '메타', '구글', '네이버'].forEach(c => {
+        const tBtn = document.getElementById(c === 'ALL' ? 'tTabAll' : (c === '메타' ? 'tTabMeta' : (c === '구글' ? 'tTabGoogle' : 'tTabNaver')));
+        if (tBtn) tBtn.className = c === ch ? "px-2.5 py-1 rounded-md font-bold bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs transition-all" : "px-2.5 py-1 rounded-md font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 transition-all";
+        
+        const dBtn = document.getElementById(c === 'ALL' ? 'dTabAll' : (c === '메타' ? 'dTabMeta' : (c === '구글' ? 'dTabGoogle' : 'dTabNaver')));
+        if (dBtn) dBtn.className = c === ch ? "px-2.5 py-1 rounded-md font-bold bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs transition-all" : "px-2.5 py-1 rounded-md font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 transition-all";
       });
     }
 
@@ -894,6 +946,18 @@
         campTypeEl.value = 'ALL';
       } else {
         wrapper.classList.remove('hidden');
+      }
+      
+      const dailyWrapper = document.getElementById('dailyCampaignTypeFilterWrapper');
+      const dailyCampTypeEl = document.getElementById('dailyCampaignTypeFilter');
+      
+      if (dailyWrapper && dailyCampTypeEl) {
+        if (ch === '메타') {
+            dailyWrapper.classList.add('hidden');
+            dailyCampTypeEl.value = 'ALL';
+        } else {
+            dailyWrapper.classList.remove('hidden');
+        }
       }
     }
 
@@ -1094,7 +1158,6 @@
       renderTrendChart(selType, selCh, selCampType, isCompareMode, startStr, endStr, prevStartStr, prevEndStr); 
       renderTopChart(curr.itemsList);
       
-      // 일자별 시트는 글로벌 값들과 상관없이 표 내부의 로컬 필터만 적용받음
       renderDailySheetTable(); 
       
       let tableList = curr.itemsList;
@@ -1188,27 +1251,23 @@
       }
     }
 
-    // ★ 수정됨: 글로벌 필터와 무관하게 로컬 필터 값만으로 렌더링
     function renderDailySheetTable() {
       const tb = document.getElementById('dailyTableBody');
       const tf = document.getElementById('dailyTableFoot');
       if (!tb) return;
 
-      // 기준이 되는 '월'은 글로벌 시작일을 따라감
       const startStr = document.getElementById('customStartDate').value;
       const baseDate = startStr ? new Date(startStr) : new Date();
       const year = baseDate.getFullYear();
       const month = baseDate.getMonth();
       const lastDay = new Date(year, month + 1, 0).getDate();
 
-      // 로컬 필터 데이터 가져오기
       const selType = document.getElementById('dailyTypeFilter').value || 'ALL';
       const selCh = document.getElementById('dailyChannelFilter').value || 'ALL';
       const selCampType = document.getElementById('dailyCampaignTypeFilter').value || 'ALL';
 
       const dateMap = {};
       rawDailyData.forEach(d => {
-        // 해당 월에 속하는 데이터만
         const dYear = parseInt(d.date.substring(0, 4));
         const dMonth = parseInt(d.date.substring(5, 7)) - 1;
 
@@ -1347,12 +1406,14 @@
     function renderRawTables(startStr, endStr) {
       const metaBody = document.getElementById('metaRawTableBody');
       const googleBody = document.getElementById('googleRawTableBody');
-      if (!metaBody || !googleBody) return;
+      const naverBody = document.getElementById('naverRawTableBody');
+      if (!metaBody || !googleBody || !naverBody) return;
 
       const filtered = rawDailyData.filter(d => (!startStr || !endStr || (d.date >= startStr && d.date <= endStr)));
       
       const metaList = filtered.filter(d => d.channel === '메타');
       const googleList = filtered.filter(d => d.channel === '구글');
+      const naverList = filtered.filter(d => d.channel === '네이버');
 
       metaBody.innerHTML = metaList.length ? metaList.map(d => `
         <tr class="hover:bg-slate-50 dark:hover:bg-slate-800">
@@ -1365,6 +1426,17 @@
       `).join('') : `<tr><td colspan="5" class="py-4 text-center text-slate-400">데이터가 없습니다.</td></tr>`;
 
       googleBody.innerHTML = googleList.length ? googleList.map(d => `
+        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800">
+          <td class="py-1.5 px-2.5">${d.date.substring(5)}</td>
+          <td class="py-1.5 px-2.5 truncate max-w-[180px]" title="${d.name}">${d.name}</td>
+          <td class="py-1.5 px-2.5 text-slate-500">${d.campaignType || '-'}</td>
+          <td class="py-1.5 px-2.5 text-right font-bold tabular-nums">${formatCurrency(d.spend)}</td>
+          <td class="py-1.5 px-2.5 text-right text-purple-600 tabular-nums">${formatNumber(d.reg)}</td>
+          <td class="py-1.5 px-2.5 text-right text-blue-600 tabular-nums">${formatNumber(d.pur)}</td>
+        </tr>
+      `).join('') : `<tr><td colspan="6" class="py-4 text-center text-slate-400">데이터가 없습니다.</td></tr>`;
+
+      naverBody.innerHTML = naverList.length ? naverList.map(d => `
         <tr class="hover:bg-slate-50 dark:hover:bg-slate-800">
           <td class="py-1.5 px-2.5">${d.date.substring(5)}</td>
           <td class="py-1.5 px-2.5 truncate max-w-[180px]" title="${d.name}">${d.name}</td>
@@ -1536,7 +1608,6 @@
         return { ...c, customBadge: badgeHtml, convDeltaHtml, cpaDeltaHtml };
       });
 
-      // 데이터 없는 지표 최하단 정렬
       tData.sort((a, b) => {
         let vA = a[sortCol];
         let vB = b[sortCol];
@@ -1563,14 +1634,13 @@
       if(!tb) return;
       tb.innerHTML = '';
       tData.forEach(r => {
-        const bCls = 'badge-neutral mr-1';
+        const bCls = r.channel === '메타' ? 'badge-meta' : (r.channel === '구글' ? 'badge-google' : 'badge-naver');
         const urlsStr = r.urls && r.urls.length > 0 ? r.urls.join(',') : '';
         const hasUrl = urlsStr.length > 0;
         const clickAttr = hasUrl ? `onclick="openCreativeModal('${r.channel}', '${r.name.replace(/'/g, "\\'")}', '${urlsStr}')"` : '';
         const nameStyle = hasUrl ? 'cursor-pointer text-indigo-600 dark:text-indigo-400 hover:underline font-bold' : 'text-slate-800 dark:text-slate-200';
         const campTypeBadge = r.campaignType ? `<span class="text-[9px] bg-slate-100 text-slate-500 border border-slate-200 px-1 py-0.5 rounded ml-1 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300">${r.campaignType}</span>` : '';
         
-        // CPA Data Bar
         const cpaValue = r.cpa_total === Infinity ? 0 : r.cpa_total;
         const cpaBarWidth = (cpaValue / maxCpaTotal) * 100;
 
@@ -1578,7 +1648,7 @@
         tr.className = 'hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition-colors h-11';
         tr.innerHTML = `
           <td class="py-2 px-3 sticky-col truncate max-w-[240px]">
-            <span class="${bCls}">${r.channel}</span>
+            <span class="${bCls} mr-1">${r.channel}</span>
             <span class="${nameStyle}" ${clickAttr}>${r.name}</span>
             ${campTypeBadge}
           </td>
@@ -1656,9 +1726,13 @@
 
       currList.forEach(c => {
         let badgeHtml = '';
-        if (c.total_conv > 0 && c.cpa_total <= benchmarkCpa * 0.8) badgeHtml = `<span class="badge-status badge-status-good">고효율</span>`;
-        else if ((c.total_conv === 0 && c.spend > 50000) || c.cpa_total > benchmarkCpa * 1.3) badgeHtml = `<span class="badge-status badge-status-bad">점검필요</span>`;
-        else badgeHtml = `<span class="badge-status badge-status-neutral">유지</span>`;
+        if (c.total_conv > 0 && c.cpa_total <= benchmarkCpa * 0.8) {
+          badgeHtml = `<span class="badge-status badge-status-good">고효율</span>`;
+        } else if ((c.total_conv === 0 && c.spend > 50000) || c.cpa_total > benchmarkCpa * 1.3) {
+          badgeHtml = `<span class="badge-status badge-status-bad">점검필요</span>`;
+        } else {
+          badgeHtml = `<span class="badge-status badge-status-neutral">유지</span>`;
+        }
 
         let convDeltaHtml = '', cpaDeltaHtml = '';
         let prevC = prevItemsMap ? prevItemsMap[`${c.channel}_${c.name}`] : null;
@@ -1667,7 +1741,7 @@
           cpaDeltaHtml = getContextualDeltaHtml(c.cpa_total !== Infinity ? c.cpa_total : 0, prevC.cpa_total !== Infinity ? prevC.cpa_total : 0, 'cost');
         }
 
-        const bCls = 'badge-neutral';
+        const bCls = c.channel === '메타' ? 'badge-meta' : (c.channel === '구글' ? 'badge-google' : 'badge-naver');
         const urlsStr = c.urls && c.urls.length > 0 ? c.urls.join(',') : '';
         const hasUrl = urlsStr.length > 0;
         const clickAttr = hasUrl ? `onclick="openCreativeModal('${c.channel}', '${c.name.replace(/'/g, "\\'")}', '${urlsStr}')"` : '';
